@@ -16,13 +16,13 @@ services:
     environment:
       RAILS_ENV: development
 
-  db:
-    image: mysql:5.7.28 # 2020/03/28 AWSで5.7系でこれが最新だったので
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-    ports:
-      - 3331:3306
-    volumes:
-      - ../../mysql/mysql_data:/var/lib/mysql # データの永続化 ホストのディレクトリ:コンテナ内のディレクトリで中身が同期される
-      - ../../mysql/conf.d:/etc/mysql/conf.d
+  # db:
+  #   image: mysql:5.7.28 # 2020/03/28 AWSで5.7系でこれが最新だったので
+  #   restart: always
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: root
+  #   ports:
+  #     - 3331:3306
+  #   volumes:
+  #     - ../../mysql/mysql_data:/var/lib/mysql # データの永続化 ホストのディレクトリ:コンテナ内のディレクトリで中身が同期される
+  #     - ../../mysql/conf.d:/etc/mysql/conf.d

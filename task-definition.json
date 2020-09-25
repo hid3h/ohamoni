@@ -1,0 +1,35 @@
+{
+  "containerDefinitions": [
+    {
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "secretOptions": null,
+        "options": {
+          "awslogs-group": "/ecs/ohamoni-rails-task",
+          "awslogs-region": "ap-northeast-1",
+          "awslogs-stream-prefix": "ecs"
+        }
+      },
+      "portMappings": [
+        {
+          "hostPort": 0,
+          "protocol": "tcp",
+          "containerPort": 3000
+        }
+      ],
+      "memory": null,
+      "memoryReservation": 128,
+      "volumesFrom": [],
+      "image": "okikawaru",
+      "essential": true,
+      "name": "rails"
+    }
+  ],
+  "memory": null,
+  "taskRoleArn": null,
+  "family": "ohamoni-rails-task",
+  "requiresCompatibilities": [
+    "EC2"
+  ],
+  "cpu": null
+}
