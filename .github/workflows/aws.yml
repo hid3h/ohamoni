@@ -30,7 +30,7 @@ jobs:
       id: build-image
       env:
         ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-        ECR_REPOSITORY: ohamoni-rails
+        ECR_REPOSITORY: ohamorning-rails
         IMAGE_TAG: ${{ github.sha }}
         RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
       run: |
@@ -55,6 +55,6 @@ jobs:
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ohamoni-rails-service
+        service: ohamorning-rails-service
         cluster: seriko
         wait-for-service-stability: true

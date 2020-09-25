@@ -5,7 +5,7 @@
         "logDriver": "awslogs",
         "secretOptions": null,
         "options": {
-          "awslogs-group": "/ecs/ohamoni-rails-task",
+          "awslogs-group": "/ecs/ohamorning-rails-task",
           "awslogs-region": "ap-northeast-1",
           "awslogs-stream-prefix": "ecs"
         }
@@ -27,7 +27,7 @@
   ],
   "memory": null,
   "taskRoleArn": null,
-  "family": "ohamoni-rails-task",
+  "family": "ohamorning-rails-task",
   "requiresCompatibilities": [
     "EC2"
   ],
