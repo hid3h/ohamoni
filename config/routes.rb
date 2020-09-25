@@ -3,4 +3,10 @@ Rails.application.routes.draw do
 
   get "/api/v1", to: 'application#health'
 
+  namespace 'api' do
+    namespace 'v1' do
+      post 'webhook', to: 'webhook#receive'
+      get 'test', to: 'webhook#test'
+    end
+  end
 end
