@@ -1,4 +1,5 @@
 class Api::V1::WebhookController < ApplicationController
+  # https://developers.line.biz/ja/reference/messaging-api/#webhooks
   def receive
     events = params['events'][0]
 
