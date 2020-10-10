@@ -1,0 +1,2 @@
+class WakeUpTime < ApplicationRecord
+end

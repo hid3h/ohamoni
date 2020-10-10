@@ -47,4 +47,4 @@ gem 'debase'
 
 gem 'line-bot-api'
 
-gem 'google-api-client'
+gem 'mysql2'

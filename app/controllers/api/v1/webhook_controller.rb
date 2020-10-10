@@ -1,6 +1,7 @@
 class Api::V1::WebhookController < ApplicationController
   # https://developers.line.biz/ja/reference/messaging-api/#webhooks
   def receive
+    # TODO 署名チェック
     events = params['events'][0]
 
     message = {
