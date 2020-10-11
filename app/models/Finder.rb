@@ -9,14 +9,11 @@ class Finder
 
       case text
       when WAKE_UP_MESSAGE then
-        WakeUpTime.wake_up(line_user_id: event['source']['userId'])
-        message = {
-          type: 'text',
-          text: '記録しました'
-        }
+        message_hash = WakeUpTime.wake_up(line_user_id: event['source']['userId'])
+        
         line_bot_client.reply_message(
           reply_token: event['replyToken'],
-          message: message
+          message: message_hash
         )
       end
     end
