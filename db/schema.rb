@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_10_10_030802) do
+ActiveRecord::Schema.define(version: 2020_10_11_020455) do
 
   create_table "users", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
     t.string "line_user_id", null: false
@@ -23,9 +23,11 @@ ActiveRecord::Schema.define(version: 2020_10_10_030802) do
 
   create_table "wake_up_times", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
     t.bigint "user_id", null: false
+    t.date "woke_up_on", null: false
     t.datetime "woke_up_at", null: false
     t.datetime "created_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
     t.datetime "updated_at", default: -> { "CURRENT_TIMESTAMP" }, null: false
+    t.index ["user_id", "woke_up_on"], name: "index_wake_up_times_on_user_id_and_woke_up_on", unique: true
     t.index ["user_id"], name: "index_wake_up_times_on_user_id"
   end
 

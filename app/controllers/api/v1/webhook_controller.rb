@@ -2,21 +2,23 @@ class Api::V1::WebhookController < ApplicationController
   # https://developers.line.biz/ja/reference/messaging-api/#webhooks
   def receive
     # TODO 署名チェック
-    events = params['events'][0]
 
-    message = {
-      type: 'text',
-      text: events['message']['text']
-    }
-    client = Line::Bot::Client.new { |config|
-      config.channel_secret = Rails.application.credentials.line[:channel_secret]
-      config.channel_token  = Rails.application.credentials.line[:channel_token]
-    }
-    response = client.reply_message(events['replyToken'], message)
-    p response
+    Finder.excuse(events: params['events'])
   end
 
   def test
     render :json => "test"
   end
 end
+
+# {
+#   "events"=>[
+#     {
+#       "type"=>"message",
+#       "replyToken"=>"b55dbb48zzzzzz7fzzzzzz",
+#       "source"=>{"userId"=>"Uc7zzzzzzzzzzzzzzzz", "type"=>"user"},
+#       "timestamp"=>1602378060070,
+#       "mode"=>"active",
+#       "message"=>{"type"=>"text", "id"=>"112345677", "text"=>"起きた"}
+#     }
+#   ],
