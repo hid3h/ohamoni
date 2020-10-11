@@ -23,6 +23,15 @@
       "image": "okikawaru",
       "essential": true,
       "name": "rails"
+    },
+    {
+      "command": ["rails", "db:migrate"],
+      "memory": null,
+      "memoryReservation": 50,
+      "volumesFrom": [],
+      "image": "okikawaru",
+      "essential": false,
+      "name": "rails-migrate"
     }
   ],
   "memory": null,
