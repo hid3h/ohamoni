@@ -55,7 +55,7 @@ jobs:
       id: task-def-2
       uses: aws-actions/amazon-ecs-render-task-definition@v1
       with:
-        task-definition: task-definition.json
+        task-definition: ${{ steps.task-def.outputs.task-definition }}
         container-name: rails-migrate
         image: ${{ steps.build-image.outputs.image }}
 
