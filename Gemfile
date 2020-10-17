@@ -46,5 +46,5 @@ gem 'ruby-debug-ide'
 gem 'debase'
 
 gem 'line-bot-api'
-
+gem 'gruff'
 gem 'mysql2'

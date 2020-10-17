@@ -69,7 +69,11 @@ GEM
     ffi (1.13.1)
     globalid (0.4.2)
       activesupport (>= 4.2.0)
+    gruff (0.11.0)
+      histogram
+      rmagick
     hashie (4.1.0)
+    histogram (0.2.4.1)
     i18n (1.8.5)
       concurrent-ruby (~> 1.0)
     line-bot-api (1.16.0)
@@ -131,6 +135,7 @@ GEM
     rb-fsevent (0.10.4)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
+    rmagick (4.1.2)
     ruby-debug-ide (0.7.2)
       rake (>= 0.8.1)
     spring (2.1.1)
@@ -160,6 +165,7 @@ DEPENDENCIES
   bootsnap (>= 1.4.2)
   byebug
   debase
+  gruff
   line-bot-api
   listen (~> 3.2)
   mysql2

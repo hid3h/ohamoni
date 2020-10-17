@@ -20,14 +20,33 @@ class WakeUpTime < ApplicationRecord
       end
 
       # 直近一週間取得
+      wd = ["日", "月", "火", "水", "木", "金", "土"]
       weekly_data = user.wake_up_times.last_week.recently
       weekly_data_messages = weekly_data.map do |data|
-        '・' + data.woke_up_on.day.to_s + '(' + %w(日 月 火 水 木 金 土)[data.woke_up_on.wday] + ')' + data.woke_up_at.strftime("%H:%M")
+        '・' + data.woke_up_on.day.to_s + '(' + wd[data.woke_up_on.wday] + ')' + data.woke_up_at.strftime("%H:%M")
       end
 
+      # グラフ画像作成
+      today = Time.zone.today
+      labels = ((today - 7.day)..today).map do |date|
+        date.strftime("%d(#{wd[date.wday]})")
+      end
+      # TODO データ入れる
+      data = [1, nil, nil, nil, nil, nil, nil, nil]
+      g = GruffCreater.new(labels: labels, data: data)
+      filename = g.create
+
+      # {
+      #   type: 'text',
+      #   text: text + "\n\n直近の一週間の記録です\n" + weekly_data_messages.join("\n")
+      # }
+      host = Rails.env.production? ? "https://ohamoni.com" : "http://127.0.0.1:2000"
+      image_url = host + filename
+      p "image_url", image_url
       {
-        type: 'text',
-        text: text + "\n\n直近の一週間の記録です\n" + weekly_data_messages.join("\n")
+        type: "image",
+        originalContentUrl: image_url,
+        previewImageUrl: image_url
       }
     end
   end
