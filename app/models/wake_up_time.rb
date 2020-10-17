@@ -1,24 +1,49 @@
-class WakeUpTime
-  class << self
-    def wake_up(line_user_id:)
-      # ユーザー検索
-      # user = User.find_or_create_by_line_user_id(line_user_id: line_user_id)
+class WakeUpTime < Dynamo
 
-      text = 'おはようございます'
-      # TODO 保存処理
-      # user.wake_up_times.create(
-      #   # TODO 日付は日本時間になっているか？
-      #   woke_up_on: Time.zone.today, # https://qiita.com/jnchito/items/cae89ee43c30f5d6fa2c#date%E3%81%AE%E5%A0%B4%E5%90%88
-      #   woke_up_at: Time.zone.now
-      # )
-      # text = '今日は既に記録済みです'
+  TABLE_NAME = 'wake_up_times_dev'
 
-      # TODO 直近一週間取得
+  def initialize(line_user_id:)
+    super(table_name: TABLE_NAME)
+    @line_user_id = line_user_id
+  end
 
-      {
-        type: 'text',
-        text: text + "\n\n直近の一週間の記録です\n"
+  def wake_up
+    text = 'おはようございます'
+    
+    woke_up_on = Time.zone.today.to_s
+    begin
+      item = {
+        line_user_id: @line_user_id,
+        woke_up_on: woke_up_on,
+        woke_up_at: Time.zone.now.to_s,
       }
+      option = {
+        condition_expression: "attribute_not_exists(#H)"\
+          " and attribute_not_exists(#R)",
+        expression_attribute_names: {
+          "#H" => "line_user_id", # 書き方ここを見た https://github.com/aws/aws-sdk-ruby-record/blob/master/spec/aws-record/record/item_operations_spec.rb#L70
+          "#R" => "woke_up_on"
+        }
+      }
+      put_item(
+        item: item,
+        option: option
+      )
+    rescue Aws::DynamoDB::Errors::ConditionalCheckFailedException
+      text = '今日は既に記録済みです'
     end
+
+    # 直近一週間取得
+    condition = {
+      expression_attribute_values: {
+        line_user_id: @line_user_id
+      }
+    }
+    p query(condition: condition)
+
+    {
+      type: 'text',
+      text: text + "\n\n直近の一週間の記録です\n"
+    }
   end
 end
