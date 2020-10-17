@@ -47,4 +47,4 @@ gem 'debase'
 
 gem 'line-bot-api'
 
-gem 'mysql2'
+gem 'aws-sdk'
