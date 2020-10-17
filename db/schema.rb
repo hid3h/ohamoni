@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_10_11_020455) do
+ActiveRecord::Schema.define(version: 2020_10_17_080219) do
 
   create_table "users", options: "ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", force: :cascade do |t|
     t.string "line_user_id", null: false
@@ -31,4 +31,5 @@ ActiveRecord::Schema.define(version: 2020_10_11_020455) do
     t.index ["user_id"], name: "index_wake_up_times_on_user_id"
   end
 
+  add_foreign_key "wake_up_times", "users"
 end
