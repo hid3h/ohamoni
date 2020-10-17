@@ -36,18 +36,18 @@ class WakeUpTime < ApplicationRecord
       g = GruffCreater.new(labels: labels, data: data)
       filename = g.create
 
-      # {
-      #   type: 'text',
-      #   text: text + "\n\n直近の一週間の記録です\n" + weekly_data_messages.join("\n")
-      # }
-      host = Rails.env.production? ? "https://ohamoni.com" : "http://127.0.0.1:2000"
-      image_url = host + filename
-      p "image_url", image_url
       {
-        type: "image",
-        originalContentUrl: image_url,
-        previewImageUrl: image_url
+        type: 'text',
+        text: text + "\n\n直近の一週間の記録です\n" + weekly_data_messages.join("\n")
       }
+      # host = Rails.env.production? ? "https://ohamoni.com" : "http://127.0.0.1:2000"
+      # image_url = host + filename
+      # p "image_url", image_url
+      # {
+      #   type: "image",
+      #   originalContentUrl: image_url,
+      #   previewImageUrl: image_url
+      # }
     end
   end
 end
