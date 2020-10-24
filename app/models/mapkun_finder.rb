@@ -27,9 +27,9 @@ class MapkunFinder
     def extract_supported_urls(text)
       urls = URI.extract(text)
       urls.select do |url|
-        uri = URI.parse(url)
-        host = uri.host
-        SUPPORTED_HOSTS.include?(host)
+        # スマフォドメインやampでgoogle.comから始まるのもあるので
+        # 対象hostがurlの中に含まれているかで判定
+        SUPPORTED_HOSTS.detect { |host| url.include?(host) }
       end
     end
   end
