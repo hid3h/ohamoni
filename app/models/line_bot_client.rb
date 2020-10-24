@@ -1,9 +1,17 @@
 class LineBotClient
   def initialize
     @client = Line::Bot::Client.new { |config|
-      config.channel_secret = ENV["LINE_CHANNEL_SECRET"] || Rails.application.credentials.line[:channel_secret]
-      config.channel_token  = ENV["LINE_CHANNEL_TOKEN"] || Rails.application.credentials.line[:channel_token]
+      config.channel_secret = channel_secret
+      config.channel_token  = channel_token
     }
+  end
+
+  def channel_secret
+    raise NotImplementedError
+  end
+
+  def channel_token
+    raise NotImplementedError
   end
 
   def get_profile(user_id)

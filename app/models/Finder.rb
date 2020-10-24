@@ -10,7 +10,8 @@ class Finder
       case text
       when WAKE_UP_MESSAGE then
         message_hash = WakeUpTime.wake_up(line_user_id: event['source']['userId'])
-        
+
+        p "message_hash", message_hash
         line_bot_client.reply_message(
           reply_token: event['replyToken'],
           message: message_hash
@@ -21,7 +22,7 @@ class Finder
     private
 
     def line_bot_client
-      @line_bot_client ||= LineBotClient.new
+      @line_bot_client ||= LineBotClientOhamoni.new
     end
   end
 end
