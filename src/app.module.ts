@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
-import { LineWebhookModule } from "./line-webhook/line-webhook.module";
+import { LinebotModule } from "./linebot/linebot.module";
 
 @Module({
-  imports: [LineWebhookModule],
+  imports: [LinebotModule],
   controllers: [AppController],
   providers: [AppService],
 })
