@@ -24,6 +24,8 @@ COPY --from=builder /app/yarn.lock ./yarn.lock
 
 RUN yarn --immutable --production
 
+RUN yarn prisma:generate
+
 EXPOSE 8080
 ENV PORT 8080
 
