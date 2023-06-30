@@ -31,4 +31,4 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 EXPOSE 8080
 ENV PORT 8080
 
-CMD ["yarn", "start"]
+CMD ["yarn", "start:prod"]
