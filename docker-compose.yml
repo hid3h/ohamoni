@@ -1,0 +1,12 @@
+version: '3'
+services:
+  db:
+    image: mysql:8.0 # 2023/06/30 GCPで8系が最新で8.0だったので
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - 3331:3306
+    volumes:
+      - ../mysql/mysql8/mysql_data:/var/lib/mysql # データの永続化 ホストのディレクトリ:コンテナ内のディレクトリで中身が同期される
+      - ../mysql/mysql8/conf.d:/etc/mysql/conf.d
