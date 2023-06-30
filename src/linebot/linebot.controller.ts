@@ -9,11 +9,14 @@ import {
 } from "@nestjs/common";
 import { validateSignature } from "@line/bot-sdk";
 import { Response } from "express";
+import { LinebotService } from "./linebot.service";
 
 @Controller("api/linebot")
 export class LinebotController {
+  constructor(private readonly linebotService: LinebotService) {}
+
   @Post("webhook")
-  webhook(
+  async webhook(
     @Req() req: RawBodyRequest<Request>,
     @Res() res: Response,
     @Headers("x-line-signature") xLineSignature: string,
@@ -26,7 +29,11 @@ export class LinebotController {
       xLineSignature,
     );
 
+    const body = req.body;
+
     console.log("result", result);
+
+    await this.linebotService.handleEvent(body);
 
     res.status(HttpStatus.OK).send("OK");
   }
