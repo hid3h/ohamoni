@@ -20,6 +20,7 @@ ENV NODE_ENV=production
 ENV LANG ja_JP.UTF-8
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/yarn.lock ./yarn.lock
 
