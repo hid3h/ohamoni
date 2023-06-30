@@ -1,4 +1,5 @@
 import {
+  Body,
   Controller,
   Headers,
   HttpStatus,
@@ -7,7 +8,7 @@ import {
   Req,
   Res,
 } from "@nestjs/common";
-import { validateSignature } from "@line/bot-sdk";
+import { WebhookRequestBody, validateSignature } from "@line/bot-sdk";
 import { Response } from "express";
 import { LinebotService } from "./linebot.service";
 
@@ -18,22 +19,21 @@ export class LinebotController {
   @Post("webhook")
   async webhook(
     @Req() req: RawBodyRequest<Request>,
+    @Body() body: WebhookRequestBody,
     @Res() res: Response,
     @Headers("x-line-signature") xLineSignature: string,
   ) {
     const rawBody = req.rawBody;
 
-    const result = validateSignature(
+    const isVaildSinature = validateSignature(
       rawBody,
       process.env.LINE_CHANNEL_SECRET,
       xLineSignature,
     );
 
-    const body = req.body;
-
-    console.log("result", result);
-
-    await this.linebotService.handleEvent(body);
+    if (isVaildSinature) {
+      await this.linebotService.handleEvent(body);
+    }
 
     res.status(HttpStatus.OK).send("OK");
   }
