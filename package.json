@@ -20,8 +20,7 @@
     "nest": "nest",
     "prisma": "prisma",
     "prisma:generate": "prisma generate",
-    "prisma:migrate:dev": "prisma migrate dev",
-    "start:migrate:prod": "prisma migrate deploy && yarn run start:prod"
+    "prisma:migrate:dev": "prisma migrate dev"
   },
   "dependencies": {
     "@line/bot-sdk": "^7.5.2",
