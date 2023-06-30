@@ -1,4 +1,4 @@
-import { Client, WebhookRequestBody } from "@line/bot-sdk";
+import { Client, WebhookRequestBody, MessageEvent } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -23,5 +23,17 @@ export class LinebotService {
     }
 
     const event = events[0];
+    if (event.type === "message") {
+      const messageEvent = event as MessageEvent;
+      const replyToken = messageEvent.replyToken;
+      const message = messageEvent.message;
+      if (message.type === "text") {
+        const text = message.text;
+        await this.linebotClient.replyMessage(replyToken, {
+          type: "text",
+          text: text,
+        });
+      }
+    }
   }
 }
