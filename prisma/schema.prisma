@@ -9,3 +9,12 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model Account {
+  id String @id @default(cuid())
+  lineId String @unique @map("line_id")
+  registeredAt DateTime @map("registered_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("accounts")
+}
