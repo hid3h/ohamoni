@@ -50,13 +50,14 @@ export class GettingUpService {
       fromDate: new Date(gotUpAt.getTime() - 7 * 24 * 60 * 60 * 1000),
     });
 
-    console.log("gettingUps", gettingUps);
     const gettingUpRecordMessages = gettingUps.map((g) => {
-      if (!g) {
-        return undefined;
-      }
-      const gotUpAtInJST = this.toJapanDateISOString(g.gotUpAt);
-      return `${gotUpAtInJST} ${g.gotUpAt.getHours()}:${g.gotUpAt.getMinutes()}`;
+      const gotUpAt = g.gotUpAt;
+      const days = this.getDays(gotUpAt.getDay());
+      const month = "0" + (gotUpAt.getMonth() + 1); // JavaScriptの月は0から始まるため1を足しています。
+      const day = ("0" + gotUpAt.getDate()).slice(-2);
+      const hours = ("0" + gotUpAt.getHours()).slice(-2);
+      const minutes = ("0" + gotUpAt.getMinutes()).slice(-2);
+      return `${month}/${day}(${days}) ${hours}:${minutes}`;
     });
     console.log("gettingUpRecordMessages", gettingUpRecordMessages);
     await this.linebotClient.pushMessage(lineUserId, {
@@ -107,25 +108,29 @@ export class GettingUpService {
         {},
       );
 
-    console.log(
-      "latestRegisterdGettingUpMapGroupedByGotUpDateInJST",
-      latestRegisterdGettingUpMapGroupedByGotUpDateInJST,
-    );
-
     const sortedKeys = Object.keys(
       latestRegisterdGettingUpMapGroupedByGotUpDateInJST,
     ).sort();
-    return sortedKeys.map((key) => {
-      return latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key]
-        .gettingUpDeletion
-        ? undefined
-        : latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key];
-    });
+    return sortedKeys
+      .map((key) => {
+        return latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key]
+          .gettingUpDeletion
+          ? undefined
+          : latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key];
+      })
+      .filter((g) => g);
   }
 
   private toJapanDateISOString(date) {
-    return new Date(date.getTime() + 9 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
+    return this.toJapanDatetime(date).toISOString().split("T")[0];
+  }
+
+  private toJapanDatetime(date) {
+    return new Date(date.getTime() + 9 * 60 * 60 * 1000);
+  }
+
+  private getDays(i: number) {
+    const days = ["日", "月", "火", "水", "木", "金", "土"];
+    return days[i];
   }
 }
