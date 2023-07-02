@@ -1,7 +1,7 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { add } from "date-fns";
-import { format } from "date-fns-tz";
+import { format, utcToZonedTime } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -53,7 +53,8 @@ export class GettingUpService {
     });
 
     const gettingUpRecordMessages = gettingUps.map((g) => {
-      return format(g.gotUpAt, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" });
+      const gotUpAtInJST = utcToZonedTime(g.gotUpAt, "Asia/Tokyo");
+      return format(gotUpAtInJST, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" });
     });
 
     await this.linebotClient.pushMessage(lineUserId, {
