@@ -1,5 +1,7 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
+import { add } from "date-fns";
+import { format } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -47,19 +49,13 @@ export class GettingUpService {
 
     const gettingUps = await this.fetchGettingUpsByDateFrom({
       accountId: account.id,
-      fromDate: new Date(gotUpAt.getTime() - 7 * 24 * 60 * 60 * 1000),
+      fromDate: new Date(add(gotUpAt, { weeks: -1 })),
     });
 
     const gettingUpRecordMessages = gettingUps.map((g) => {
-      const gotUpAt = g.gotUpAt;
-      const days = this.getDays(gotUpAt.getDay());
-      const month = "0" + (gotUpAt.getMonth() + 1); // JavaScriptの月は0から始まるため1を足しています。
-      const day = ("0" + gotUpAt.getDate()).slice(-2);
-      const hours = ("0" + gotUpAt.getHours()).slice(-2);
-      const minutes = ("0" + gotUpAt.getMinutes()).slice(-2);
-      return `${month}/${day}(${days}) ${hours}:${minutes}`;
+      return format(g.gotUpAt, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" });
     });
-    console.log("gettingUpRecordMessages", gettingUpRecordMessages);
+
     await this.linebotClient.pushMessage(lineUserId, {
       type: "text",
       text: gettingUpRecordMessages.join("\n"),
@@ -122,15 +118,6 @@ export class GettingUpService {
   }
 
   private toJapanDateISOString(date) {
-    return this.toJapanDatetime(date).toISOString().split("T")[0];
-  }
-
-  private toJapanDatetime(date) {
-    return new Date(date.getTime() + 9 * 60 * 60 * 1000);
-  }
-
-  private getDays(i: number) {
-    const days = ["日", "月", "火", "水", "木", "金", "土"];
-    return days[i];
+    return format(date, "yyyy-MM-dd", { timeZone: "Asia/Tokyo" });
   }
 }
