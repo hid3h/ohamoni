@@ -1,6 +1,6 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { add } from "date-fns";
+import { add, parse } from "date-fns";
 import { format, utcToZonedTime } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -18,27 +18,25 @@ export class GettingUpService {
     });
   }
 
-  async gettingUpNow({
+  // datetime: '2023-07-03T20:58'
+  async gettingUp({
     lineUserId,
-    gotUpTimestamp,
     replyToken,
+    datetimeInJST,
   }: {
     lineUserId: string;
-    gotUpTimestamp: number;
     replyToken: string;
+    datetimeInJST: string;
   }) {
-    await this.linebotClient.replyMessage(replyToken, {
-      type: "text",
-      text: "おはようございます！",
-    });
+    const gotUpAt = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
+    console.log("gotUpAt", gotUpAt);
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
-    const gotUpAt = new Date(gotUpTimestamp);
 
     await this.prismaService.gettingUp.create({
       data: {
         gotUpAt,
-        registeredAt: gotUpAt,
+        registeredAt: new Date(),
         account: {
           connect: {
             id: account.id,
@@ -57,9 +55,11 @@ export class GettingUpService {
       return format(gotUpAtInJST, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" });
     });
 
-    await this.linebotClient.pushMessage(lineUserId, {
+    await this.linebotClient.replyMessage(replyToken, {
       type: "text",
-      text: gettingUpRecordMessages.join("\n"),
+      text:
+        "記録しました！\n直近一週間の記録です\n\n" +
+        gettingUpRecordMessages.join("\n"),
     });
   }
 

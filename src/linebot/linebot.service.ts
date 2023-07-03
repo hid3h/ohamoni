@@ -1,10 +1,19 @@
-import { WebhookRequestBody, MessageEvent } from "@line/bot-sdk";
+import { WebhookRequestBody, MessageEvent, Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
+import { parse } from "date-fns";
 import { GettingUpService } from "src/getting-up/getting-up.service";
 
 @Injectable()
 export class LinebotService {
-  constructor(private readonly gettingUpService: GettingUpService) {}
+  private readonly linebotClient: Client;
+
+  private readonly gotUpActionData: string = "got_up";
+
+  constructor(private readonly gettingUpService: GettingUpService) {
+    this.linebotClient = new Client({
+      channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+    });
+  }
 
   async handleEvent(body: WebhookRequestBody) {
     const events = body.events;
@@ -19,12 +28,37 @@ export class LinebotService {
       if (message.type === "text") {
         const text = message.text;
         if (text === "起きた") {
-          await this.gettingUpService.gettingUpNow({
-            lineUserId: messageEvent.source.userId,
-            gotUpTimestamp: messageEvent.timestamp,
-            replyToken: messageEvent.replyToken,
+          await this.linebotClient.replyMessage(messageEvent.replyToken, {
+            type: "template",
+            altText: "起きた時間を教えてください",
+            template: {
+              type: "buttons",
+              text: "起きた時間を教えてください",
+              actions: [
+                {
+                  type: "datetimepicker",
+                  label: "日時を選択する",
+                  mode: "datetime",
+                  data: this.gotUpActionData,
+                },
+              ],
+            },
           });
         }
+      }
+    } else if (event.type === "postback") {
+      const postback = event.postback;
+      if (postback.data === this.gotUpActionData) {
+        // Property 'datetime' does not exist on type 'DateTimePostback | RichMenuSwitchPostback'.
+        // Property 'datetime' does not exist on type 'RichMenuSwitchPostback'ねえ
+        // const datetimeInJST = params.datetime;
+        const params = postback.params as { datetime: string };
+        const datetimeInJST = params.datetime;
+        await this.gettingUpService.gettingUp({
+          lineUserId: event.source.userId,
+          datetimeInJST,
+          replyToken: event.replyToken,
+        });
       }
     }
   }
