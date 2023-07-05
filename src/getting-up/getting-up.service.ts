@@ -28,7 +28,9 @@ export class GettingUpService {
     replyToken: string;
     datetimeInJST: string;
   }) {
-    const gotUpAt = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
+    const gotUpAtInJST = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
+    console.log("gotUpAtInJST", gotUpAtInJST);
+    const gotUpAt = utcToZonedTime(gotUpAtInJST, "Asia/Tokyo");
     console.log("gotUpAt", gotUpAt);
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
@@ -45,7 +47,7 @@ export class GettingUpService {
       },
     });
 
-    const gettingUps = await this.fetchGettingUpsByDateFrom({
+    const gettingUps = await this.fetchGettingUpsFrom({
       accountId: account.id,
       fromDate: new Date(add(gotUpAt, { weeks: -1 })),
     });
@@ -63,7 +65,7 @@ export class GettingUpService {
     });
   }
 
-  private async fetchGettingUpsByDateFrom({
+  private async fetchGettingUpsFrom({
     accountId,
     fromDate,
   }: {
