@@ -45,36 +45,40 @@ export class GettingUpService {
       },
     });
 
-    // const gettingUps = await this.fetchGettingUpsFrom({
-    //   accountId: account.id,
-    //   fromDate: new Date(add(gotUpAt, { weeks: -1 })),
-    // });
+    const gettingUps = await this.fetchGettingUpsFrom({
+      accountId: account.id,
+      fromDate: new Date(add(gotUpAt, { weeks: -1 })),
+    });
 
-    // const gettingUpRecordMessages = [];
-    // for (let i = 0; i < 7; i++) {
-    //   const gettingUp = gettingUps.find((gettingUp) => {
-    //     return isSameDay(
-    //       add(gotUpAtInJST, { days: -i }),
-    //       utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo"),
-    //     );
-    //   });
-    //   if (gettingUp) {
-    //     const gotUpAtInJST = utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo");
-    //     gettingUpRecordMessages.push(
-    //       format(gotUpAtInJST, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" }),
-    //     );
-    //   } else {
-    //     gettingUpRecordMessages.push(
-    //       format(add(gotUpAtInJST, { days: -i }), "MM/dd(E)", {
-    //         timeZone: "Asia/Tokyo",
-    //       }),
-    //     );
-    //   }
-    // }
+    const nowInJST = utcToZonedTime(new Date(), "Asia/Tokyo");
+
+    const gettingUpRecordMessages = [];
+    for (let i = 0; i < 7; i++) {
+      const gettingUp = gettingUps.find((gettingUp) => {
+        return isSameDay(
+          add(nowInJST, { days: -i }),
+          utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo"),
+        );
+      });
+      if (gettingUp) {
+        const gotUpAtInJST = utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo");
+        gettingUpRecordMessages.push(
+          format(gotUpAtInJST, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" }),
+        );
+      } else {
+        gettingUpRecordMessages.push(
+          format(add(nowInJST, { days: -i }), "MM/dd(E)", {
+            timeZone: "Asia/Tokyo",
+          }),
+        );
+      }
+    }
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
-      text: "記録しました！",
+      text:
+        "記録しました！\n直近一週間の記録です\n\n" +
+        gettingUpRecordMessages.join("\n"),
     });
   }
 
