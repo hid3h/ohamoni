@@ -1,6 +1,6 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { add, parse } from "date-fns";
+import { add, eachDayOfInterval, isSameDay, parse } from "date-fns";
 import { format, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -29,9 +29,7 @@ export class GettingUpService {
     datetimeInJST: string;
   }) {
     const gotUpAtInJST = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
-    console.log("gotUpAtInJST", gotUpAtInJST);
     const gotUpAt = zonedTimeToUtc(gotUpAtInJST, "Asia/Tokyo");
-    console.log("gotUpAt", gotUpAt);
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
@@ -47,21 +45,36 @@ export class GettingUpService {
       },
     });
 
-    const gettingUps = await this.fetchGettingUpsFrom({
-      accountId: account.id,
-      fromDate: new Date(add(gotUpAt, { weeks: -1 })),
-    });
+    // const gettingUps = await this.fetchGettingUpsFrom({
+    //   accountId: account.id,
+    //   fromDate: new Date(add(gotUpAt, { weeks: -1 })),
+    // });
 
-    const gettingUpRecordMessages = gettingUps.map((g) => {
-      const gotUpAtInJST = utcToZonedTime(g.gotUpAt, "Asia/Tokyo");
-      return format(gotUpAtInJST, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" });
-    });
+    // const gettingUpRecordMessages = [];
+    // for (let i = 0; i < 7; i++) {
+    //   const gettingUp = gettingUps.find((gettingUp) => {
+    //     return isSameDay(
+    //       add(gotUpAtInJST, { days: -i }),
+    //       utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo"),
+    //     );
+    //   });
+    //   if (gettingUp) {
+    //     const gotUpAtInJST = utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo");
+    //     gettingUpRecordMessages.push(
+    //       format(gotUpAtInJST, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" }),
+    //     );
+    //   } else {
+    //     gettingUpRecordMessages.push(
+    //       format(add(gotUpAtInJST, { days: -i }), "MM/dd(E)", {
+    //         timeZone: "Asia/Tokyo",
+    //       }),
+    //     );
+    //   }
+    // }
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
-      text:
-        "記録しました！\n直近一週間の記録です\n\n" +
-        gettingUpRecordMessages.join("\n"),
+      text: "記録しました！",
     });
   }
 
