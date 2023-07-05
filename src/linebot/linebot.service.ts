@@ -27,7 +27,7 @@ export class LinebotService {
       const message = messageEvent.message;
       if (message.type === "text") {
         const text = message.text;
-        if (text === "起きた") {
+        if (text === "記録") {
           await this.linebotClient.replyMessage(messageEvent.replyToken, {
             type: "template",
             altText: "起きた時間を教えてください",
