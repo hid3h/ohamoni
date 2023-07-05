@@ -1,7 +1,7 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { add, parse } from "date-fns";
-import { format, utcToZonedTime } from "date-fns-tz";
+import { format, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -30,7 +30,7 @@ export class GettingUpService {
   }) {
     const gotUpAtInJST = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
     console.log("gotUpAtInJST", gotUpAtInJST);
-    const gotUpAt = utcToZonedTime(gotUpAtInJST, "Asia/Tokyo");
+    const gotUpAt = zonedTimeToUtc(gotUpAtInJST, "Asia/Tokyo");
     console.log("gotUpAt", gotUpAt);
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
