@@ -94,16 +94,21 @@ export class GettingUpService {
     for (let i = 0; i < 7; i++) {
       const targetDateUTC = add(new Date(), { days: -i });
       console.log("targetDateUTC nowがUTCになっていればok", targetDateUTC);
-      const targetDayJSTISOString = this.toJSTDayISOString(targetDateUTC);
+      const targetDayJSTISOString = formatInTimeZone(
+        targetDateUTC,
+        "Asia/Tokyo",
+        "MM/dd(E)",
+      );
       console.log("now->targetDayJSTISOString", targetDayJSTISOString);
       const gettingUp = gettingUpsOrderedByRegisteredAtDesc.find(
         (gettingUp) => {
           return (
-            targetDayJSTISOString === this.toJSTDayISOString(gettingUp.gotUpAt)
+            targetDayJSTISOString ===
+            formatInTimeZone(gettingUp.gotUpAt, "Asia/Tokyo", "MM/dd(E)")
           );
         },
       );
-      console.log("gettingUp", gettingUp);
+
       if (gettingUp && !gettingUp.gettingUpDeletion) {
         gettingUpMapByJSTDayISOString[targetDayJSTISOString] = gettingUp;
       } else {
@@ -120,11 +125,6 @@ export class GettingUpService {
           : "なし"
       }`;
     });
-
-    console.log(
-      "format1 nowが日本時間になっていればいい",
-      formatInTimeZone(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss zzz"),
-    );
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
