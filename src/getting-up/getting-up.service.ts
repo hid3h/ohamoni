@@ -93,9 +93,9 @@ export class GettingUpService {
       new Map();
     for (let i = 0; i < 7; i++) {
       const targetDateUTC = add(new Date(), { days: -i });
-      console.log("targetDateUTC", targetDateUTC);
+      console.log("targetDateUTC nowがUTCになっていればok", targetDateUTC);
       const targetDayJSTISOString = this.toJSTDayISOString(targetDateUTC);
-      console.log("targetDayJSTISOString", targetDayJSTISOString);
+      console.log("now->targetDayJSTISOString", targetDayJSTISOString);
       const gettingUp = gettingUpsOrderedByRegisteredAtDesc.find(
         (gettingUp) => {
           return (
@@ -112,16 +112,17 @@ export class GettingUpService {
     }
 
     const sortedKeys = Object.keys(gettingUpMapByJSTDayISOString);
-    console.log("sortedKeys", sortedKeys);
     const gettingUpRecordMessages = sortedKeys.map((key) => {
       const gettingUp = gettingUpMapByJSTDayISOString[key];
       return `${key} ${
-        gettingUp ? this.toJSTTimeISOString(gettingUp.gotUpAt) : "なし"
+        gettingUp
+          ? formatInTimeZone(gettingUp.gotUpAt, "Asia/Tokyo", "HH:mm")
+          : "なし"
       }`;
     });
 
     console.log(
-      "format1",
+      "format1 nowが日本時間になっていればいい",
       formatInTimeZone(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss zzz"),
     );
 
