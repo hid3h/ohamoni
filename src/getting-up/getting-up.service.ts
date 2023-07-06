@@ -50,29 +50,22 @@ export class GettingUpService {
       fromDate: new Date(add(gotUpAt, { weeks: -1 })),
     });
 
-    const nowInJST = utcToZonedTime(new Date(), "Asia/Tokyo");
-
-    const gettingUpRecordMessages = [];
-    for (let i = 0; i < 7; i++) {
+    const gettingUpRecordMessages = eachDayOfInterval({
+      start: new Date(),
+      end: add(new Date(), { weeks: -1 }),
+    }).map((date) => {
       const gettingUp = gettingUps.find((gettingUp) => {
-        return isSameDay(
-          add(nowInJST, { days: -i }),
-          utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo"),
-        );
+        return isSameDay(date, gettingUp.gotUpAt);
       });
       if (gettingUp) {
-        const gotUpAtInJST = utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo");
-        gettingUpRecordMessages.push(
-          format(gotUpAtInJST, "MM/dd(E) HH:mm", { timeZone: "Asia/Tokyo" }),
-        );
+        return format(gettingUp.gotUpAt, "MM/dd(E) HH:mm", {
+          timeZone: "Asia/Tokyo",
+        });
       } else {
-        gettingUpRecordMessages.push(
-          format(add(nowInJST, { days: -i }), "MM/dd(E)", {
-            timeZone: "Asia/Tokyo",
-          }),
-        );
+        const day = format(date, "MM/dd(E)", { timeZone: "Asia/Tokyo" });
+        return `${day} なし`;
       }
-    }
+    });
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
