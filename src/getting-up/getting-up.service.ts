@@ -30,6 +30,7 @@ export class GettingUpService {
     replyToken: string;
     datetimeInJST: string;
   }) {
+    console.log("datetimeInJST", datetimeInJST)
     const gotUpAtUTC = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
     console.log("gotUpAtUTC", gotUpAtUTC);
 
