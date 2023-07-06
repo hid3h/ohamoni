@@ -30,9 +30,15 @@ export class GettingUpService {
     replyToken: string;
     datetimeInJST: string;
   }) {
-    console.log("datetimeInJST", datetimeInJST)
+    console.log("datetimeInJST", datetimeInJST);
+    const gotUpAtJST = new Date(datetimeInJST);
+    console.log("gotUpAtJST", gotUpAtJST);
     const gotUpAtUTC = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
     console.log("gotUpAtUTC", gotUpAtUTC);
+    // ローカル(タイムゾーン日本)
+    // datetimeInJST 2023-07-06T20:56
+    // gotUpAtJST 2023-07-06T11:56:00.000Z
+    // gotUpAtUTC 2023-07-06T11:56:00.000Z
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
@@ -64,7 +70,7 @@ export class GettingUpService {
       const targetDateUTC = add(new Date(), { days: -i });
       console.log("targetDateUTC", targetDateUTC);
       const targetDateJSTISOString = this.toJSTISOString(targetDateUTC);
-      console.log("targetDateJSTISOString", targetDateJSTISOString)
+      console.log("targetDateJSTISOString", targetDateJSTISOString);
       // const targetDateJSTString = format(targetDatetUTC, "MM/dd(E)", {
       //   locale: ja,
       // });
