@@ -2,7 +2,7 @@ import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { GettingUp } from "@prisma/client";
 import { add, eachDayOfInterval, isSameDay, parse } from "date-fns";
-import { format, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
+import { format, toDate, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
 import ja from "date-fns/locale/ja";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -39,6 +39,14 @@ export class GettingUpService {
     // datetimeInJST 2023-07-06T20:56
     // gotUpAtJST 2023-07-06T11:56:00.000Z
     // gotUpAtUTC 2023-07-06T11:56:00.000Z
+
+    // Cloud Run(タイムゾーンUTC)
+    // datetimeInJST 2023-07-06T21:05
+    // gotUpAtJST 2023-07-06T21:05:00.000Z
+    // gotUpAtUTC 2023-07-06T21:05:00.000Z
+    console.log("toDate1", toDate(datetimeInJST, { timeZone: "Asia/Tokyo" }));
+    console.log("toDate2", toDate(datetimeInJST, { timeZone: "UTC" }));
+    console.log("toDate3", toDate(datetimeInJST));
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
