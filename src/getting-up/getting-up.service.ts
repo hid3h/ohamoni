@@ -1,7 +1,7 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { add, eachDayOfInterval, isSameDay, parse } from "date-fns";
-import { format, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
+import { add, isSameDay, parse } from "date-fns";
+import { format, zonedTimeToUtc } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -50,22 +50,25 @@ export class GettingUpService {
       fromDate: new Date(add(gotUpAt, { weeks: -1 })),
     });
 
-    const gettingUpRecordMessages = eachDayOfInterval({
-      start: new Date(),
-      end: add(new Date(), { weeks: -1 }),
-    }).map((date) => {
+    const gettingUpRecordMessages = [];
+    for (let i = 0; i < 7; i++) {
+      const targetDatetime = add(new Date(), { days: -i });
       const gettingUp = gettingUps.find((gettingUp) => {
-        return isSameDay(date, gettingUp.gotUpAt);
+        return isSameDay(targetDatetime, gettingUp.gotUpAt);
       });
       if (gettingUp) {
-        return format(gettingUp.gotUpAt, "MM/dd(E) HH:mm", {
+        gettingUpRecordMessages.push(
+          format(gettingUp.gotUpAt, "MM/dd(E) HH:mm", {
+            timeZone: "Asia/Tokyo",
+          }),
+        );
+      } else {
+        const day = format(targetDatetime, "MM/dd(E)", {
           timeZone: "Asia/Tokyo",
         });
-      } else {
-        const day = format(date, "MM/dd(E)", { timeZone: "Asia/Tokyo" });
-        return `${day} なし`;
+        gettingUpRecordMessages.push(`${day} なし`);
       }
-    });
+    }
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
