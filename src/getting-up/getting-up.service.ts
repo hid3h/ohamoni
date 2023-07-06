@@ -30,6 +30,7 @@ export class GettingUpService {
     datetimeInJST: string;
   }) {
     const gotUpAtInJST = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
+    console.log("gotUpAtInJST", gotUpAtInJST);
     const gotUpAt = zonedTimeToUtc(gotUpAtInJST, "Asia/Tokyo");
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
@@ -58,47 +59,31 @@ export class GettingUpService {
     const nowInJST = format(new Date(), "yyyy-MM-dd HH:mm:ss", { locale: ja });
     console.log("new Date()", new Date());
     console.log("nowInJST これは日本時間ならok", nowInJST);
-    // const gettingUpRecordMessages = eachDayOfInterval({
-    //   start: add(new Date(), { weeks: -1 }),
-    //   end: new Date(),
-    // })
-    //   .reverse()
-    //   .map((date) => {
-    //     console.log("date これはutcでok", date);
-    //     const dateInJSTStr = format(date, "yyyy-MM-dd HH:mm:ss", {
-    //       locale: ja,
-    //     });
-    //     console.log("dateInJSTStr", dateInJSTStr);
-    //   });
+
     const gettingUpRecordMessages = [];
-    for (let i = 0; i < 7; i++) {
-      const targetDatetUTC = add(new Date(), { days: -i });
-      console.log("targetDatetUTC", targetDatetUTC);
-      const targetDateJSTString = format(
-        targetDatetUTC,
-        "yyyy-MM-dd HH:mm:ss",
-        { locale: ja },
-      );
-      console.log(
-        "targetDateJSTString これは日本時間ならok",
-        targetDateJSTString,
-      );
-      // const gettingUp = gettingUps.find((gettingUp) => {
-      //   return isSameDay(targetDateJSTString, gettingUp.gotUpAt);
-      // });
-      // if (gettingUp) {
-      //   gettingUpRecordMessages.push(
-      //     format(gettingUp.gotUpAt, "MM/dd(E) HH:mm", {
-      //       timeZone: "Asia/Tokyo",
-      //     }),
-      //   );
-      // } else {
-      //   const day = format(targetDateJSTString, "MM/dd(E)", {
-      //     timeZone: "Asia/Tokyo",
-      //   });
-      //   gettingUpRecordMessages.push(`${day} なし`);
-      // }
-    }
+    // const hoge: Record<string, (typeof gettingUps)[number]> = {};
+    // for (let i = 0; i < 7; i++) {
+    //   const targetDatetUTC = add(new Date(), { days: -i });
+    //   console.log("targetDatetUTC", targetDatetUTC);
+    //   const targetDateJSTString = format(targetDatetUTC, "MM/dd(E)", {
+    //     locale: ja,
+    //   });
+    //   console.log(
+    //     "targetDateJSTString これは日本時間ならok",
+    //     targetDateJSTString,
+    //   );
+    //   const gettingUp = gettingUps.find((gettingUp) => {
+    //     return isSameDay(targetDatetUTC, gettingUp.gotUpAt);
+    //   });
+    //   if (gettingUp) {
+    //     hoge[targetDateJSTString] = gettingUp;
+    //   } else {
+    //     const day = format(targetDateJSTString, "MM/dd(E)", {
+    //       timeZone: "Asia/Tokyo",
+    //     });
+    //     gettingUpRecordMessages.push(`${day} なし`);
+    //   }
+    // }
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
