@@ -1,7 +1,8 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { add, isSameDay, parse } from "date-fns";
-import { format, zonedTimeToUtc } from "date-fns-tz";
+import { add, eachDayOfInterval, isSameDay, parse } from "date-fns";
+import { format, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
+import ja from "date-fns/locale/ja";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -50,25 +51,33 @@ export class GettingUpService {
       fromDate: new Date(add(gotUpAt, { weeks: -1 })),
     });
 
+    const gettingUpsOrderedByRegisteredAtDesc = gettingUps.sort((a, b) => {
+      return b.registeredAt.getTime() - a.registeredAt.getTime();
+    });
+
+    const nowInJST = format(new Date(), "yyyy-MM-dd HH:mm:ss", { locale: ja });
+    console.log("new Date()", new Date());
+    console.log("nowInJST これは日本時間ならok", nowInJST);
     const gettingUpRecordMessages = [];
-    for (let i = 0; i < 7; i++) {
-      const targetDatetime = add(new Date(), { days: -i });
-      const gettingUp = gettingUps.find((gettingUp) => {
-        return isSameDay(targetDatetime, gettingUp.gotUpAt);
-      });
-      if (gettingUp) {
-        gettingUpRecordMessages.push(
-          format(gettingUp.gotUpAt, "MM/dd(E) HH:mm", {
-            timeZone: "Asia/Tokyo",
-          }),
-        );
-      } else {
-        const day = format(targetDatetime, "MM/dd(E)", {
-          timeZone: "Asia/Tokyo",
-        });
-        gettingUpRecordMessages.push(`${day} なし`);
-      }
-    }
+    // for (let i = 0; i < 7; i++) {
+    //   const targetDatetime = add(nowInJST, { days: -i });
+    //   console.log("targetDatetime これは日本時間ならok", targetDatetime);
+    //   // const gettingUp = gettingUps.find((gettingUp) => {
+    //   //   return isSameDay(targetDatetime, gettingUp.gotUpAt);
+    //   // });
+    //   // if (gettingUp) {
+    //   //   gettingUpRecordMessages.push(
+    //   //     format(gettingUp.gotUpAt, "MM/dd(E) HH:mm", {
+    //   //       timeZone: "Asia/Tokyo",
+    //   //     }),
+    //   //   );
+    //   // } else {
+    //   //   const day = format(targetDatetime, "MM/dd(E)", {
+    //   //     timeZone: "Asia/Tokyo",
+    //   //   });
+    //   //   gettingUpRecordMessages.push(`${day} なし`);
+    //   // }
+    // }
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
@@ -85,52 +94,49 @@ export class GettingUpService {
     accountId: string;
     fromDate: Date;
   }) {
-    const gettingUps = await this.prismaService.gettingUp.findMany({
+    return await this.prismaService.gettingUp.findMany({
       where: {
         accountId,
         gotUpAt: {
           gte: fromDate,
         },
       },
-      orderBy: {
-        gotUpAt: "asc",
-      },
       include: {
         gettingUpDeletion: true,
       },
     });
 
-    const latestRegisterdGettingUpMapGroupedByGotUpDateInJST =
-      gettingUps.reduce(
-        (acc: Record<string, (typeof gettingUps)[number]>, g) => {
-          const gotUpDateInJST = this.toJapanDateISOString(g.gotUpAt);
-          if (acc[gotUpDateInJST]) {
-            if (
-              acc[gotUpDateInJST].registeredAt.getTime() <
-              g.registeredAt.getTime()
-            ) {
-              acc[gotUpDateInJST] = g;
-            }
-          }
-          if (!acc[gotUpDateInJST]) {
-            acc[gotUpDateInJST] = g;
-          }
-          return acc;
-        },
-        {},
-      );
+    // const latestRegisterdGettingUpMapGroupedByGotUpDateInJST =
+    //   gettingUps.reduce(
+    //     (acc: Record<string, (typeof gettingUps)[number]>, g) => {
+    //       const gotUpDateInJST = this.toJapanDateISOString(g.gotUpAt);
+    //       if (acc[gotUpDateInJST]) {
+    //         if (
+    //           acc[gotUpDateInJST].registeredAt.getTime() <
+    //           g.registeredAt.getTime()
+    //         ) {
+    //           acc[gotUpDateInJST] = g;
+    //         }
+    //       }
+    //       if (!acc[gotUpDateInJST]) {
+    //         acc[gotUpDateInJST] = g;
+    //       }
+    //       return acc;
+    //     },
+    //     {},
+    //   );
 
-    const sortedKeys = Object.keys(
-      latestRegisterdGettingUpMapGroupedByGotUpDateInJST,
-    ).sort();
-    return sortedKeys
-      .map((key) => {
-        return latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key]
-          .gettingUpDeletion
-          ? undefined
-          : latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key];
-      })
-      .filter((g) => g);
+    // const sortedKeys = Object.keys(
+    //   latestRegisterdGettingUpMapGroupedByGotUpDateInJST,
+    // ).sort();
+    // return sortedKeys
+    //   .map((key) => {
+    //     return latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key]
+    //       .gettingUpDeletion
+    //       ? undefined
+    //       : latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key];
+    //   })
+    //   .filter((g) => g);
   }
 
   private toJapanDateISOString(date) {
