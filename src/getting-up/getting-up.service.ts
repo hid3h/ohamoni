@@ -2,7 +2,14 @@ import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { GettingUp } from "@prisma/client";
 import { add, eachDayOfInterval, isSameDay, parse } from "date-fns";
-import { format, toDate, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
+import {
+  format,
+  formatInTimeZone,
+  toDate,
+  utcToZonedTime,
+  zonedTimeToUtc,
+} from "date-fns-tz";
+import { ta } from "date-fns/locale";
 import ja from "date-fns/locale/ja";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -30,11 +37,11 @@ export class GettingUpService {
     replyToken: string;
     datetimeInJST: string;
   }) {
-    console.log("datetimeInJST", datetimeInJST);
-    const gotUpAtJST = new Date(datetimeInJST);
-    console.log("gotUpAtJST", gotUpAtJST);
-    const gotUpAtUTC = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
-    console.log("gotUpAtUTC", gotUpAtUTC);
+    // console.log("datetimeInJST", datetimeInJST);
+    // const gotUpAtJST = new Date(datetimeInJST);
+    // console.log("gotUpAtJST", gotUpAtJST);
+    // const gotUpAtUTC = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
+    // console.log("gotUpAtUTC", gotUpAtUTC);
     // ローカル(タイムゾーン日本)
     // datetimeInJST 2023-07-06T20:56
     // gotUpAtJST 2023-07-06T11:56:00.000Z
@@ -44,15 +51,26 @@ export class GettingUpService {
     // datetimeInJST 2023-07-06T21:05
     // gotUpAtJST 2023-07-06T21:05:00.000Z
     // gotUpAtUTC 2023-07-06T21:05:00.000Z
-    console.log("toDate1", toDate(datetimeInJST, { timeZone: "Asia/Tokyo" }));
-    console.log("toDate2", toDate(datetimeInJST, { timeZone: "UTC" }));
-    console.log("toDate3", toDate(datetimeInJST));
+    // console.log("toDate1", toDate(datetimeInJST, { timeZone: "Asia/Tokyo" }));
+    // console.log("toDate2", toDate(datetimeInJST, { timeZone: "UTC" }));
+    // console.log("toDate3", toDate(datetimeInJST));
+    // タイムゾーン日本
+    // toDate1 2023-07-06T12:20:00.000Z
+    // toDate2 2023-07-06T21:20:00.000Z
+    // toDate3 2023-07-06T12:20:00.000Z
+
+    // タイムゾーンUTC
+    // toDate1 2023-07-06T12:27:00.000Z
+    // toDate2 2023-07-06T21:27:00.000Z
+    // toDate3 2023-07-06T21:27:00.000Z
+
+    const gotUpAt = toDate(datetimeInJST, { timeZone: "Asia/Tokyo" });
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
     await this.prismaService.gettingUp.create({
       data: {
-        gotUpAt: gotUpAtUTC,
+        gotUpAt: gotUpAt,
         registeredAt: new Date(),
         account: {
           connect: {
@@ -64,47 +82,55 @@ export class GettingUpService {
 
     const gettingUps = await this.fetchGettingUpsFrom({
       accountId: account.id,
-      fromDate: new Date(add(gotUpAtUTC, { weeks: -1 })),
+      fromDate: new Date(add(gotUpAt, { weeks: -1 })),
     });
 
     const gettingUpsOrderedByRegisteredAtDesc = gettingUps.sort((a, b) => {
       return b.registeredAt.getTime() - a.registeredAt.getTime();
     });
 
-    const gettingUpMapByDateJSTString: Map<string, GettingUp | undefined> =
+    const gettingUpMapByJSTDayISOString: Map<string, GettingUp | undefined> =
       new Map();
-
     for (let i = 0; i < 7; i++) {
       const targetDateUTC = add(new Date(), { days: -i });
       console.log("targetDateUTC", targetDateUTC);
-      const targetDateJSTISOString = this.toJSTISOString(targetDateUTC);
-      console.log("targetDateJSTISOString", targetDateJSTISOString);
-      // const targetDateJSTString = format(targetDatetUTC, "MM/dd(E)", {
-      //   locale: ja,
-      // });
-      // console.log(
-      //   "targetDateJSTString これは日本時間ならok",
-      //   targetDateJSTString,
-      // );
-      // const gettingUp = gettingUps.find((gettingUp) => {
-      //   return isSameDay(targetDatetUTC, gettingUp.gotUpAt);
-      // });
-      // if (gettingUp) {
-      //   hoge[targetDateJSTString] = gettingUp;
-      // } else {
-      //   const day = format(targetDateJSTString, "MM/dd(E)", {
-      //     timeZone: "Asia/Tokyo",
-      //   });
-      //   gettingUpRecordMessages.push(`${day} なし`);
-      // }
+      const targetDayJSTISOString = this.toJSTDayISOString(targetDateUTC);
+      console.log("targetDayJSTISOString", targetDayJSTISOString);
+      const gettingUp = gettingUpsOrderedByRegisteredAtDesc.find(
+        (gettingUp) => {
+          return (
+            targetDayJSTISOString === this.toJSTDayISOString(gettingUp.gotUpAt)
+          );
+        },
+      );
+      console.log("gettingUp", gettingUp);
+      if (gettingUp && !gettingUp.gettingUpDeletion) {
+        gettingUpMapByJSTDayISOString[targetDayJSTISOString] = gettingUp;
+      } else {
+        gettingUpMapByJSTDayISOString[targetDayJSTISOString] = undefined;
+      }
     }
 
-    // await this.linebotClient.replyMessage(replyToken, {
-    //   type: "text",
-    //   text:
-    //     "記録しました！\n直近一週間の記録です\n\n" +
-    //     gettingUpRecordMessages.join("\n"),
-    // });
+    const sortedKeys = Object.keys(gettingUpMapByJSTDayISOString);
+    console.log("sortedKeys", sortedKeys);
+    const gettingUpRecordMessages = sortedKeys.map((key) => {
+      const gettingUp = gettingUpMapByJSTDayISOString[key];
+      return `${key} ${
+        gettingUp ? this.toJSTTimeISOString(gettingUp.gotUpAt) : "なし"
+      }`;
+    });
+
+    console.log(
+      "format1",
+      formatInTimeZone(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm:ss zzz"),
+    );
+
+    await this.linebotClient.replyMessage(replyToken, {
+      type: "text",
+      text:
+        "記録しました！\n直近一週間の記録です\n\n" +
+        gettingUpRecordMessages.join("\n"),
+    });
   }
 
   private async fetchGettingUpsFrom({
@@ -159,7 +185,17 @@ export class GettingUpService {
     //   .filter((g) => g);
   }
 
-  private toJSTISOString(utcDate: Date) {
-    return utcDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+  private toJSTDayISOString(utcDate: Date) {
+    const JSTISOString = utcDate.toLocaleString("ja-JP", {
+      timeZone: "Asia/Tokyo",
+    });
+    return JSTISOString.split(" ")[0];
+  }
+
+  private toJSTTimeISOString(utcDate: Date) {
+    const JSTISOString = utcDate.toLocaleString("ja-JP", {
+      timeZone: "Asia/Tokyo",
+    });
+    return JSTISOString.split(" ")[1];
   }
 }
