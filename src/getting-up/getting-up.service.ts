@@ -1,5 +1,6 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
+import { GettingUp } from "@prisma/client";
 import { add, eachDayOfInterval, isSameDay, parse } from "date-fns";
 import { format, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
 import ja from "date-fns/locale/ja";
@@ -29,15 +30,14 @@ export class GettingUpService {
     replyToken: string;
     datetimeInJST: string;
   }) {
-    const gotUpAtInJST = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
-    console.log("gotUpAtInJST", gotUpAtInJST);
-    const gotUpAt = zonedTimeToUtc(gotUpAtInJST, "Asia/Tokyo");
+    const gotUpAtUTC = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
+    console.log("gotUpAtUTC", gotUpAtUTC);
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
     await this.prismaService.gettingUp.create({
       data: {
-        gotUpAt,
+        gotUpAt: gotUpAtUTC,
         registeredAt: new Date(),
         account: {
           connect: {
@@ -49,48 +49,47 @@ export class GettingUpService {
 
     const gettingUps = await this.fetchGettingUpsFrom({
       accountId: account.id,
-      fromDate: new Date(add(gotUpAt, { weeks: -1 })),
+      fromDate: new Date(add(gotUpAtUTC, { weeks: -1 })),
     });
 
     const gettingUpsOrderedByRegisteredAtDesc = gettingUps.sort((a, b) => {
       return b.registeredAt.getTime() - a.registeredAt.getTime();
     });
 
-    const nowInJST = format(new Date(), "yyyy-MM-dd HH:mm:ss", { locale: ja });
-    console.log("new Date()", new Date());
-    console.log("nowInJST これは日本時間ならok", nowInJST);
+    const gettingUpMapByDateJSTString: Map<string, GettingUp | undefined> =
+      new Map();
 
-    const gettingUpRecordMessages = [];
-    // const hoge: Record<string, (typeof gettingUps)[number]> = {};
-    // for (let i = 0; i < 7; i++) {
-    //   const targetDatetUTC = add(new Date(), { days: -i });
-    //   console.log("targetDatetUTC", targetDatetUTC);
-    //   const targetDateJSTString = format(targetDatetUTC, "MM/dd(E)", {
-    //     locale: ja,
-    //   });
-    //   console.log(
-    //     "targetDateJSTString これは日本時間ならok",
-    //     targetDateJSTString,
-    //   );
-    //   const gettingUp = gettingUps.find((gettingUp) => {
-    //     return isSameDay(targetDatetUTC, gettingUp.gotUpAt);
-    //   });
-    //   if (gettingUp) {
-    //     hoge[targetDateJSTString] = gettingUp;
-    //   } else {
-    //     const day = format(targetDateJSTString, "MM/dd(E)", {
-    //       timeZone: "Asia/Tokyo",
-    //     });
-    //     gettingUpRecordMessages.push(`${day} なし`);
-    //   }
-    // }
+    for (let i = 0; i < 7; i++) {
+      const targetDateUTC = add(new Date(), { days: -i });
+      console.log("targetDateUTC", targetDateUTC);
+      const targetDateJSTISOString = this.toJSTISOString(targetDateUTC);
+      console.log("targetDateJSTISOString", targetDateJSTISOString)
+      // const targetDateJSTString = format(targetDatetUTC, "MM/dd(E)", {
+      //   locale: ja,
+      // });
+      // console.log(
+      //   "targetDateJSTString これは日本時間ならok",
+      //   targetDateJSTString,
+      // );
+      // const gettingUp = gettingUps.find((gettingUp) => {
+      //   return isSameDay(targetDatetUTC, gettingUp.gotUpAt);
+      // });
+      // if (gettingUp) {
+      //   hoge[targetDateJSTString] = gettingUp;
+      // } else {
+      //   const day = format(targetDateJSTString, "MM/dd(E)", {
+      //     timeZone: "Asia/Tokyo",
+      //   });
+      //   gettingUpRecordMessages.push(`${day} なし`);
+      // }
+    }
 
-    await this.linebotClient.replyMessage(replyToken, {
-      type: "text",
-      text:
-        "記録しました！\n直近一週間の記録です\n\n" +
-        gettingUpRecordMessages.join("\n"),
-    });
+    // await this.linebotClient.replyMessage(replyToken, {
+    //   type: "text",
+    //   text:
+    //     "記録しました！\n直近一週間の記録です\n\n" +
+    //     gettingUpRecordMessages.join("\n"),
+    // });
   }
 
   private async fetchGettingUpsFrom({
@@ -145,7 +144,7 @@ export class GettingUpService {
     //   .filter((g) => g);
   }
 
-  private toJapanDateISOString(date) {
-    return format(date, "yyyy-MM-dd", { timeZone: "Asia/Tokyo" });
+  private toJSTISOString(utcDate: Date) {
+    return utcDate.toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
   }
 }
