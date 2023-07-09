@@ -1,16 +1,8 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { GettingUp } from "@prisma/client";
-import { add, eachDayOfInterval, isSameDay, parse } from "date-fns";
-import {
-  format,
-  formatInTimeZone,
-  toDate,
-  utcToZonedTime,
-  zonedTimeToUtc,
-} from "date-fns-tz";
-import { ta } from "date-fns/locale";
-import ja from "date-fns/locale/ja";
+import { add } from "date-fns";
+import { formatInTimeZone, toDate } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -93,13 +85,11 @@ export class GettingUpService {
       new Map();
     for (let i = 0; i < 7; i++) {
       const targetDateUTC = add(new Date(), { days: -i });
-      console.log("targetDateUTC nowがUTCになっていればok", targetDateUTC);
       const targetDayJSTISOString = formatInTimeZone(
         targetDateUTC,
         "Asia/Tokyo",
         "MM/dd(E)",
       );
-      console.log("now->targetDayJSTISOString", targetDayJSTISOString);
       const gettingUp = gettingUpsOrderedByRegisteredAtDesc.find(
         (gettingUp) => {
           return (
@@ -152,51 +142,5 @@ export class GettingUpService {
         gettingUpDeletion: true,
       },
     });
-
-    // const latestRegisterdGettingUpMapGroupedByGotUpDateInJST =
-    //   gettingUps.reduce(
-    //     (acc: Record<string, (typeof gettingUps)[number]>, g) => {
-    //       const gotUpDateInJST = this.toJapanDateISOString(g.gotUpAt);
-    //       if (acc[gotUpDateInJST]) {
-    //         if (
-    //           acc[gotUpDateInJST].registeredAt.getTime() <
-    //           g.registeredAt.getTime()
-    //         ) {
-    //           acc[gotUpDateInJST] = g;
-    //         }
-    //       }
-    //       if (!acc[gotUpDateInJST]) {
-    //         acc[gotUpDateInJST] = g;
-    //       }
-    //       return acc;
-    //     },
-    //     {},
-    //   );
-
-    // const sortedKeys = Object.keys(
-    //   latestRegisterdGettingUpMapGroupedByGotUpDateInJST,
-    // ).sort();
-    // return sortedKeys
-    //   .map((key) => {
-    //     return latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key]
-    //       .gettingUpDeletion
-    //       ? undefined
-    //       : latestRegisterdGettingUpMapGroupedByGotUpDateInJST[key];
-    //   })
-    //   .filter((g) => g);
-  }
-
-  private toJSTDayISOString(utcDate: Date) {
-    const JSTISOString = utcDate.toLocaleString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-    });
-    return JSTISOString.split(" ")[0];
-  }
-
-  private toJSTTimeISOString(utcDate: Date) {
-    const JSTISOString = utcDate.toLocaleString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-    });
-    return JSTISOString.split(" ")[1];
   }
 }
