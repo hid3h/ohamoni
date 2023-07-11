@@ -106,7 +106,7 @@ export class ReminderNotificationService {
     });
 
     const cloudTaskClient = this.getCloudTaskClient();
-    console.log("cloudTaskClient", cloudTaskClient);
+    console.log("cloudTaskClient直後");
     console.log(
       "process.env.GOOGLE_CLOUD_PROJECT",
       process.env.GOOGLE_CLOUD_PROJECT,
@@ -130,7 +130,7 @@ export class ReminderNotificationService {
             }),
           ).toString("base64"),
           oidcToken: {
-            serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL,
+            serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL ?? undefined,
           },
         },
       },
