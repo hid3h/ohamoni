@@ -119,19 +119,22 @@ export class ReminderNotificationService {
     );
     console.log("parent", parent);
     console.log("process.env.BASE_URL", process.env.BASE_URL);
-    console.log(
-      "reminderNotificationSetting.id",
-      reminderNotificationSetting.id,
-    );
     await cloudTaskClient.createTask({
       parent,
       task: {
         httpRequest: {
           httpMethod: "POST",
           url: `${process.env.BASE_URL}/api/reminder-notifications`,
-          body: Buffer.from("test").toString("base64"),
+          body: Buffer.from(
+            JSON.stringify({
+              reminderNotificationSettingId: reminderNotificationSetting.id,
+            }),
+          ).toString("base64"),
           oidcToken: {
             serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL ?? undefined,
+          },
+          headers: {
+            "Content-Type": "application/json",
           },
         },
       },
