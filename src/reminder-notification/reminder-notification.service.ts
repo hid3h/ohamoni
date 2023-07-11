@@ -105,11 +105,14 @@ export class ReminderNotificationService {
     });
 
     const cloudTaskClient = new CloudTasksClient();
+    console.log("process.env.GCP_PROJECT", process.env.GCP_PROJECT)
     const parent = cloudTaskClient.queuePath(
       process.env.GCP_PROJECT,
       "asia-northeast1",
       "ohamoni-prod",
     );
+    console.log("parent", parent);
+    console.log("process.env.BASE_URL", process.env.BASE_URL);
     await cloudTaskClient.createTask({
       parent,
       task: {
