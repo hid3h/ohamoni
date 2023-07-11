@@ -3,6 +3,8 @@ import { Injectable } from "@nestjs/common";
 import { Account } from "@prisma/client";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
+import { CloudTasksClient } from "@google-cloud/tasks";
+import { credentials } from "@grpc/grpc-js";
 
 @Injectable()
 export class ReminderNotificationService {
@@ -100,6 +102,22 @@ export class ReminderNotificationService {
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
       text: `${time} に設定しました`,
+    });
+
+    const cloudTaskClient = new CloudTasksClient();
+    const parent = cloudTaskClient.queuePath(
+      process.env.GCP_PROJECT,
+      "asia-northeast1",
+      "ohamoni-prod",
+    );
+    await cloudTaskClient.createTask({
+      parent,
+      task: {
+        httpRequest: {
+          httpMethod: "POST",
+          url: `${process.env.BASE_URL}/api/reminder-notifications`,
+        },
+      },
     });
   }
 

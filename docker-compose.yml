@@ -10,3 +10,10 @@ services:
     volumes:
       - ../mysql/mysql8/mysql_data:/var/lib/mysql # データの永続化 ホストのディレクトリ:コンテナ内のディレクトリで中身が同期される
       - ../mysql/mysql8/conf.d:/etc/mysql/conf.d
+  gcloud-tasks-emulator:
+    image: ghcr.io/aertje/cloud-tasks-emulator:latest
+    command: >
+      -host 0.0.0.0 -port 8133
+      -queue "projects/dev/locations/asia-northeast1/queues/ohamoni-dev"
+    ports:
+      - "${TASKS_PORT:-8133}:8133"
