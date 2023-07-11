@@ -1,15 +1,22 @@
 import { WebhookRequestBody, MessageEvent, Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { parse } from "date-fns";
 import { GettingUpService } from "src/getting-up/getting-up.service";
+import { ReminderNotificationService } from "src/reminder-notification/reminder-notification.service";
 
 @Injectable()
 export class LinebotService {
   private readonly linebotClient: Client;
 
   private readonly gotUpActionData: string = "got_up";
+  private readonly turnOffNotificationLineActionData: string =
+    "turnOffNotification";
+  private readonly setNotificationDateLineActionData: string =
+    "setNotification";
 
-  constructor(private readonly gettingUpService: GettingUpService) {
+  constructor(
+    private readonly gettingUpService: GettingUpService,
+    private readonly reminderNotificationService: ReminderNotificationService,
+  ) {
     this.linebotClient = new Client({
       channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
     });
@@ -44,6 +51,15 @@ export class LinebotService {
               ],
             },
           });
+        } else if (text === "入力忘れ防止通知") {
+          await this.reminderNotificationService.replyReminderSetting({
+            lineUserId: event.source.userId,
+            replyToken: event.replyToken,
+            turnOffNotificationLineActionData:
+              this.turnOffNotificationLineActionData,
+            setNotificationDateLineActionData:
+              this.setNotificationDateLineActionData,
+          });
         }
       }
     } else if (event.type === "postback") {
@@ -57,6 +73,19 @@ export class LinebotService {
         await this.gettingUpService.gettingUp({
           lineUserId: event.source.userId,
           datetimeInJST,
+          replyToken: event.replyToken,
+        });
+      } else if (postback.data === this.turnOffNotificationLineActionData) {
+        this.reminderNotificationService.cancell({
+          lineUserId: event.source.userId,
+          replyToken: event.replyToken,
+        });
+      } else if (postback.data === this.setNotificationDateLineActionData) {
+        const params = postback.params as { time: string };
+        const time = params.time;
+        this.reminderNotificationService.set({
+          lineUserId: event.source.userId,
+          time,
           replyToken: event.replyToken,
         });
       }

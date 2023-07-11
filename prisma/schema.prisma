@@ -17,6 +17,8 @@ model Account {
   createdAt DateTime @default(now()) @map("created_at")
 
   gettingUps GettingUp[]
+  reminderNotificationSettings ReminderNotificationSetting[]
+  reminderNotificationSettingCancellations ReminderNotificationSettingCancellation[]
 
   @@map("accounts")
 }
@@ -43,4 +45,25 @@ model GettingUpDeletion {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("getting_up_deletions")
+}
+
+model ReminderNotificationSetting {
+  id String @id @default(cuid())
+  account Account @relation(fields: [accountId], references: [id])
+  accountId String @map("account_id")
+  reminderTime String @map("reminder_time")
+  registeredAt DateTime @map("registered_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("reminder_notification_settings")
+}
+
+model ReminderNotificationSettingCancellation {
+  id String @id @default(cuid())
+  account Account @relation(fields: [accountId], references: [id])
+  accountId String @map("account_id")
+  cancelledAt DateTime @map("cancelled_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("reminder_notification_setting_cancellations")
 }
