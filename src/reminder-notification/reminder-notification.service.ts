@@ -105,9 +105,12 @@ export class ReminderNotificationService {
     });
 
     const cloudTaskClient = new CloudTasksClient();
-    console.log("process.env.GCP_PROJECT", process.env.GCP_PROJECT)
+    console.log(
+      "process.env.GOOGLE_CLOUD_PROJECT",
+      process.env.GOOGLE_CLOUD_PROJECT,
+    );
     const parent = cloudTaskClient.queuePath(
-      process.env.GCP_PROJECT,
+      process.env.GOOGLE_CLOUD_PROJECT,
       "asia-northeast1",
       "ohamoni-prod",
     );
