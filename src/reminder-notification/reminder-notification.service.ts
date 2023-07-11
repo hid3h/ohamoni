@@ -91,20 +91,21 @@ export class ReminderNotificationService {
   }) {
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
-    await this.prismaService.reminderNotificationSetting.create({
-      data: {
-        accountId: account.id,
-        reminderTime: time,
-        registeredAt: new Date(),
-      },
-    });
+    const reminderNotificationSetting =
+      await this.prismaService.reminderNotificationSetting.create({
+        data: {
+          accountId: account.id,
+          reminderTime: time,
+          registeredAt: new Date(),
+        },
+      });
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
       text: `${time} に設定しました`,
     });
 
-    const cloudTaskClient = new CloudTasksClient();
+    const cloudTaskClient = this.getCloudTaskClient();
     console.log(
       "process.env.GOOGLE_CLOUD_PROJECT",
       process.env.GOOGLE_CLOUD_PROJECT,
@@ -112,7 +113,7 @@ export class ReminderNotificationService {
     const parent = cloudTaskClient.queuePath(
       process.env.GOOGLE_CLOUD_PROJECT,
       "asia-northeast1",
-      "ohamoni-prod",
+      process.env.QUEUE_NAME,
     );
     console.log("parent", parent);
     console.log("process.env.BASE_URL", process.env.BASE_URL);
@@ -122,6 +123,11 @@ export class ReminderNotificationService {
         httpRequest: {
           httpMethod: "POST",
           url: `${process.env.BASE_URL}/api/reminder-notifications`,
+          body: Buffer.from(
+            JSON.stringify({
+              reminderNotificationSettingId: reminderNotificationSetting.id,
+            }),
+          ).toString("base64"),
         },
       },
     });
@@ -192,5 +198,16 @@ export class ReminderNotificationService {
     }
 
     return reminderNotificationSetting;
+  }
+
+  private getCloudTaskClient() {
+    console.log("NODE_ENV", process.env.NODE_ENV);
+    return process.env.NODE_ENV === "production"
+      ? new CloudTasksClient()
+      : new CloudTasksClient({
+          port: 8123,
+          servicePath: "localhost",
+          sslCreds: credentials.createInsecure(),
+        });
   }
 }
