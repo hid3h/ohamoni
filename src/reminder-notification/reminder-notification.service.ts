@@ -207,7 +207,7 @@ export class ReminderNotificationService {
   private getCloudTaskClient() {
     console.log("NODE_ENV", process.env.NODE_ENV);
     return process.env.NODE_ENV === "production"
-      ? new CloudTasksClient()
+      ? new CloudTasksClient({ fallback: true })
       : new CloudTasksClient({
           port: 8133,
           servicePath: "localhost",
