@@ -106,6 +106,7 @@ export class ReminderNotificationService {
     });
 
     const cloudTaskClient = this.getCloudTaskClient();
+    console.log("cloudTaskClient", cloudTaskClient);
     console.log(
       "process.env.GOOGLE_CLOUD_PROJECT",
       process.env.GOOGLE_CLOUD_PROJECT,
@@ -208,7 +209,7 @@ export class ReminderNotificationService {
     return process.env.NODE_ENV === "production"
       ? new CloudTasksClient()
       : new CloudTasksClient({
-          port: 8123,
+          port: 8133,
           servicePath: "localhost",
           sslCreds: credentials.createInsecure(),
         });
