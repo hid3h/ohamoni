@@ -106,6 +106,7 @@ export class ReminderNotificationService {
     });
 
     const cloudTaskClient = this.getCloudTaskClient();
+    // 本番Cloud Runでインスタンスの取得に2分もかかっている。謎
     console.log("cloudTaskClient直後");
     console.log(
       "process.env.GOOGLE_CLOUD_PROJECT",
@@ -118,17 +119,17 @@ export class ReminderNotificationService {
     );
     console.log("parent", parent);
     console.log("process.env.BASE_URL", process.env.BASE_URL);
+    console.log(
+      "reminderNotificationSetting.id",
+      reminderNotificationSetting.id,
+    );
     await cloudTaskClient.createTask({
       parent,
       task: {
         httpRequest: {
           httpMethod: "POST",
           url: `${process.env.BASE_URL}/api/reminder-notifications`,
-          body: Buffer.from(
-            JSON.stringify({
-              reminderNotificationSettingId: reminderNotificationSetting.id,
-            }),
-          ).toString("base64"),
+          body: Buffer.from("test").toString("base64"),
           oidcToken: {
             serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL ?? undefined,
           },
@@ -207,7 +208,7 @@ export class ReminderNotificationService {
   private getCloudTaskClient() {
     console.log("NODE_ENV", process.env.NODE_ENV);
     return process.env.NODE_ENV === "production"
-      ? new CloudTasksClient()
+      ? new CloudTasksClient({ fallback: true }) // Deadline exceeded が発生するので fallback: true を設定する.原因は不明
       : new CloudTasksClient({
           port: 8133,
           servicePath: "localhost",
