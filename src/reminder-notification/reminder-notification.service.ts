@@ -128,6 +128,9 @@ export class ReminderNotificationService {
               reminderNotificationSettingId: reminderNotificationSetting.id,
             }),
           ).toString("base64"),
+          oidcToken: {
+            serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL,
+          },
         },
       },
     });
