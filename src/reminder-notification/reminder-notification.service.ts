@@ -5,6 +5,8 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
+import { toDate } from "date-fns-tz";
+import { addDays, differenceInSeconds, isPast, parse } from "date-fns";
 
 @Injectable()
 export class ReminderNotificationService {
@@ -108,20 +110,34 @@ export class ReminderNotificationService {
     const cloudTaskClient = this.getCloudTaskClient();
     // 本番Cloud Runでインスタンスの取得に2分もかかっている。謎
     console.log("cloudTaskClient直後");
-    console.log(
-      "process.env.GOOGLE_CLOUD_PROJECT",
-      process.env.GOOGLE_CLOUD_PROJECT,
-    );
+
     const parent = cloudTaskClient.queuePath(
       process.env.GOOGLE_CLOUD_PROJECT,
       "asia-northeast1",
       process.env.QUEUE_NAME,
     );
-    console.log("parent", parent);
-    console.log("process.env.BASE_URL", process.env.BASE_URL);
+
+    console.log("time", time);
+    let nextTime = parse(time, "HH:mm", new Date());
+    console.log("nextTime", nextTime);
+
+    if (isPast(nextTime)) {
+      nextTime = addDays(nextTime, 1);
+      console.log("nextTime2", nextTime);
+    }
+
+    const now = new Date();
+    const diff = differenceInSeconds(nextTime, now);
+    console.log("diff", diff);
+
+    const scheduleTime = {
+      seconds: diff,
+    };
+
     await cloudTaskClient.createTask({
       parent,
       task: {
+        scheduleTime,
         httpRequest: {
           httpMethod: "POST",
           url: `${process.env.BASE_URL}/api/reminder-notifications`,
