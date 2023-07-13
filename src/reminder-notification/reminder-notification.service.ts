@@ -143,11 +143,25 @@ export class ReminderNotificationService {
     // nextTime2 2023-07-14T07:56:00.000Z
     // 日本時間になってる
 
-    console.log("zone1", zonedTimeToUtc(nextTime, "Asia/Tokyo"));
-    console.log("zone2", zonedTimeToUtc(nextTime, "UTC"));
-    console.log("getUnixTime(nextTime)", getUnixTime(nextTime));
+    // console.log("zone1", zonedTimeToUtc(nextTime, "Asia/Tokyo"));
+    // console.log("zone2", zonedTimeToUtc(nextTime, "UTC"));
+    // タイムゾーン日本
+    // nextTime 2023-07-13T11:33:00.000Z
+    // zone1 2023-07-13T11:33:00.000Z
+    // zone2 2023-07-13T20:33:00.000Z
+    // console.log("getUnixTime(nextTime)", getUnixTime(nextTime));
+    // タイムゾーンUTC
+    // time 20:51
+    // nextTime 2023-07-13T20:51:00.000Z
+    // zone1 2023-07-13T11:51:00.000Z
+    // zone2 2023-07-13T20:51:00.000Z
+    // getUnixTime(nextTime) 1689281460
+    const zonedNextTimeUTC = zonedTimeToUtc(nextTime, "Asia/Tokyo");
+    console.log("zonedNextTimeUTC", zonedNextTimeUTC);
+    const unixTime = getUnixTime(zonedNextTimeUTC);
+    console.log("unixTime", unixTime);
     const scheduleTime = {
-      seconds: getUnixTime(nextTime),
+      seconds: unixTime,
     };
 
     await cloudTaskClient.createTask({
