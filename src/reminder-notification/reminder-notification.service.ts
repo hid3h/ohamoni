@@ -5,7 +5,7 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
-import { toDate } from "date-fns-tz";
+import { toDate, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
 import {
   addDays,
   differenceInSeconds,
@@ -143,6 +143,8 @@ export class ReminderNotificationService {
     // nextTime2 2023-07-14T07:56:00.000Z
     // 日本時間になってる
 
+    console.log("zone1", zonedTimeToUtc(nextTime, "Asia/Tokyo"));
+    console.log("zone2", zonedTimeToUtc(nextTime, "UTC"));
     console.log("getUnixTime(nextTime)", getUnixTime(nextTime));
     const scheduleTime = {
       seconds: getUnixTime(nextTime),
