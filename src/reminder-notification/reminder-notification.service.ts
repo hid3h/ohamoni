@@ -6,7 +6,13 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
 import { toDate } from "date-fns-tz";
-import { addDays, differenceInSeconds, isPast, parse } from "date-fns";
+import {
+  addDays,
+  differenceInSeconds,
+  getUnixTime,
+  isPast,
+  parse,
+} from "date-fns";
 
 @Injectable()
 export class ReminderNotificationService {
@@ -125,13 +131,21 @@ export class ReminderNotificationService {
       nextTime = addDays(nextTime, 1);
       console.log("nextTime2", nextTime);
     }
+    // time 08:50
+    // タイムゾーン日本
+    // nextTime 2023-07-12T23:50:00.000Z
+    // nextTime2 2023-07-13T23:50:00.000Z
+    // UTCの今日になる
 
-    const now = new Date();
-    const diff = differenceInSeconds(nextTime, now);
-    console.log("diff", diff);
+    // タイムゾーンUTC
+    //  time 07:56
+    // nextTime 2023-07-13T07:56:00.000Z
+    // nextTime2 2023-07-14T07:56:00.000Z
+    // 日本時間になってる
 
+    console.log("getUnixTime(nextTime)", getUnixTime(nextTime));
     const scheduleTime = {
-      seconds: diff,
+      seconds: getUnixTime(nextTime),
     };
 
     await cloudTaskClient.createTask({
