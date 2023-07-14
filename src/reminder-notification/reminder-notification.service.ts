@@ -192,14 +192,18 @@ export class ReminderNotificationService {
     // zone2 2023-07-13T20:51:00.000Z
     // getUnixTime(nextTime) 1689281460
     const zonedNextTimeUTC = zonedTimeToUtc(nextTime, "Asia/Tokyo");
-    console.log("zonedNextTimeUTC", zonedNextTimeUTC);
+    // console.log("zonedNextTimeUTC", zonedNextTimeUTC);
     const unixTime = getUnixTime(zonedNextTimeUTC);
-    console.log("unixTime", unixTime);
+    // console.log("unixTime", unixTime);
 
+    console.log(
+      `入力忘れ防止通知を設定します. time: ${time}, nextTime: ${nextTime}, zonedNextTimeUTC: ${zonedNextTimeUTC}, unixTime: ${unixTime}`,
+    );
     await this.scheduleNotification({
       reminderNotificationSetting,
       scheduleTimeUnixSeconds: unixTime,
     });
+    console.log("入力忘れ防止通知を設定しました");
   }
 
   async cancell({
