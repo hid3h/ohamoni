@@ -8,7 +8,6 @@ import { credentials } from "@grpc/grpc-js";
 import { zonedTimeToUtc } from "date-fns-tz";
 import {
   addDays,
-  endOfDay,
   endOfToday,
   getUnixTime,
   isPast,
@@ -66,15 +65,20 @@ export class ReminderNotificationService {
     // endOfToday() 2023-07-14T23:59:59.999Z
     const startOfTodayUTC = zonedTimeToUtc(startOfToday(), "Asia/Tokyo");
     const endOfTodayUTC = zonedTimeToUtc(endOfToday(), "Asia/Tokyo");
-    console.log("startOfTodayUTC", startOfTodayUTC);
-    console.log("endOfTodayUTC", endOfTodayUTC);
-
+    // console.log("startOfTodayUTC", startOfTodayUTC);
+    // console.log("endOfTodayUTC", endOfTodayUTC);
+    // タイムゾーン日本
+    // startOfTodayUTC 2023-07-13T15:00:00.000Z
+    // endOfTodayUTC 2023-07-14T14:59:59.999Z
+    // タイムゾーンUTC
+    // startOfTodayUTC 2023-07-13T15:00:00.000Z
+    // endOfTodayUTC 2023-07-14T14:59:59.999Z
     const todayGettingUp = await this.prismaService.gettingUp.findFirst({
       where: {
         accountId: account.id,
         gotUpAt: {
-          gte: startOfToday(),
-          lt: endOfToday(),
+          gte: startOfTodayUTC,
+          lte: endOfTodayUTC,
         },
       },
       include: {
@@ -85,6 +89,9 @@ export class ReminderNotificationService {
       },
     });
     if (!todayGettingUp || todayGettingUp.gettingUpDeletion) {
+      console.log(
+        `入力済みなので通知を送りませんでした. reminderNotificationSettingId: ${reminderNotificationSettingId}`,
+      );
       return;
     }
 
@@ -329,8 +336,7 @@ export class ReminderNotificationService {
             servicePath: "localhost",
             sslCreds: credentials.createInsecure(),
           });
-    // 本番Cloud Runでインスタンスの取得に2分もかかっている。謎
-    // リファクタリングしたら直った。謎
+    // 本番Cloud Runでインスタンスの取得に1分もかかっている。謎
     console.log("cloudTaskClientnew終了");
 
     const parent = cloudTaskClient.queuePath(
