@@ -6,7 +6,15 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
 import { zonedTimeToUtc } from "date-fns-tz";
-import { addDays, endOfDay, endOfToday, getUnixTime, isPast, parse, startOfToday } from "date-fns";
+import {
+  addDays,
+  endOfDay,
+  endOfToday,
+  getUnixTime,
+  isPast,
+  parse,
+  startOfToday,
+} from "date-fns";
 
 @Injectable()
 export class ReminderNotificationService {
@@ -48,9 +56,37 @@ export class ReminderNotificationService {
       return;
     }
 
-    // 今日の記録を入力済みなら送信しない
-    console.log("startOfToday()", startOfToday());
-    console.log("endOfToday()", endOfToday());
+    // console.log("startOfToday()", startOfToday());
+    // console.log("endOfToday()", endOfToday());
+    // タイムゾーン日本
+    // startOfToday() 2023-07-13T15:00:00.000Z
+    // endOfToday() 2023-07-14T14:59:59.999Z
+    // タイムゾーンUTC
+    // startOfToday() 2023-07-14T00:00:00.000Z
+    // endOfToday() 2023-07-14T23:59:59.999Z
+    const startOfTodayUTC = zonedTimeToUtc(startOfToday(), "Asia/Tokyo");
+    const endOfTodayUTC = zonedTimeToUtc(endOfToday(), "Asia/Tokyo");
+    console.log("startOfTodayUTC", startOfTodayUTC);
+    console.log("endOfTodayUTC", endOfTodayUTC);
+
+    const todayGettingUp = await this.prismaService.gettingUp.findFirst({
+      where: {
+        accountId: account.id,
+        gotUpAt: {
+          gte: startOfToday(),
+          lt: endOfToday(),
+        },
+      },
+      include: {
+        gettingUpDeletion: true,
+      },
+      orderBy: {
+        registeredAt: "desc",
+      },
+    });
+    if (!todayGettingUp || todayGettingUp.gettingUpDeletion) {
+      return;
+    }
 
     const lineUserId = account.lineUserId;
     await this.linebotClient.pushMessage(lineUserId, {
