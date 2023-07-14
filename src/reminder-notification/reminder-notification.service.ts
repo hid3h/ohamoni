@@ -51,7 +51,7 @@ export class ReminderNotificationService {
     const lineUserId = account.lineUserId;
     await this.linebotClient.pushMessage(lineUserId, {
       type: "text",
-      text: "入力忘れ防止通知です。\n今日の記録を入力してください。",
+      text: "入力忘れ防止通知です。\n今日の記録を入力しましょう。",
     });
 
     const remindeDate = parse(
