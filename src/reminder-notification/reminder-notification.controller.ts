@@ -10,6 +10,7 @@ export class ReminderNotificationController {
 
   @Post("/")
   async notice(@Body() body, @Res() res: Response) {
+    // reminderNotificationSettingIdを特定できることで、内部からのリクエストであることを保証する
     await this.reminderNotificationService.notice({
       reminderNotificationSettingId: body.reminderNotificationSettingId,
     });
