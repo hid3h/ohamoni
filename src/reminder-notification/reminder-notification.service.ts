@@ -5,14 +5,8 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
-import { toDate, utcToZonedTime, zonedTimeToUtc } from "date-fns-tz";
-import {
-  addDays,
-  differenceInSeconds,
-  getUnixTime,
-  isPast,
-  parse,
-} from "date-fns";
+import { zonedTimeToUtc } from "date-fns-tz";
+import { addDays, getUnixTime, isPast, parse } from "date-fns";
 
 @Injectable()
 export class ReminderNotificationService {
