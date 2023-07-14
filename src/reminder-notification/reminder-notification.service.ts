@@ -96,7 +96,7 @@ export class ReminderNotificationService {
         altText: "入力忘れ防止通知の設定",
         template: {
           type: "buttons",
-          text: `${reminderNotificationSetting.reminderTime} に設定されています`,
+          text: `入力忘れ防止通知は ${reminderNotificationSetting.reminderTime} に設定されています`,
           actions: [
             {
               type: "datetimepicker",
@@ -155,7 +155,7 @@ export class ReminderNotificationService {
 
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
-      text: `${time} に設定しました`,
+      text: `入力忘れ防止通知を ${time} に設定しました`,
     });
 
     console.log("time", time);
