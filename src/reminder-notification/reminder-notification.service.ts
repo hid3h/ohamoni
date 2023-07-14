@@ -286,6 +286,7 @@ export class ReminderNotificationService {
             sslCreds: credentials.createInsecure(),
           });
     // 本番Cloud Runでインスタンスの取得に2分もかかっている。謎
+    // リファクタリングしたら直った。謎
     console.log("cloudTaskClientnew終了");
 
     const parent = cloudTaskClient.queuePath(
