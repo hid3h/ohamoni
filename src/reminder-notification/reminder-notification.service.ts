@@ -1,6 +1,6 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { Account } from "@prisma/client";
+import { Account, ReminderNotificationSetting } from "@prisma/client";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
@@ -19,6 +19,57 @@ export class ReminderNotificationService {
     this.linebotClient = new Client({
       channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
     });
+  }
+
+  async notice({
+    reminderNotificationSettingId,
+  }: {
+    reminderNotificationSettingId: string;
+  }) {
+    const reminderNotificationSetting =
+      await this.prismaService.reminderNotificationSetting.findUnique({
+        where: {
+          id: reminderNotificationSettingId,
+        },
+        include: {
+          account: true,
+        },
+      });
+
+    const account = reminderNotificationSetting.account;
+    const currentReminderNotificationSetting =
+      await this.currentReminderNotificationSetting({
+        account,
+      });
+
+    if (
+      reminderNotificationSetting.id !== currentReminderNotificationSetting?.id
+    ) {
+      return;
+    }
+
+    const lineUserId = account.lineUserId;
+    await this.linebotClient.pushMessage(lineUserId, {
+      type: "text",
+      text: "入力忘れ防止通知です。\n今日の記録を入力してください。",
+    });
+
+    const remindeDate = parse(
+      reminderNotificationSetting.reminderTime,
+      "HH:mm",
+      new Date(),
+    );
+    const nextRemindeDate = addDays(remindeDate, 1);
+    const nextRemindeDateUnixSeconds = getUnixTime(nextRemindeDate);
+
+    console.log(
+      `入力忘れ防止を通知しました。次の通知をスケジュールします. nextRemindeDate: ${nextRemindeDate}, nextRemindeDateUnixSeconds: ${nextRemindeDateUnixSeconds}`,
+    );
+    await this.scheduleNotification({
+      reminderNotificationSetting,
+      scheduleTimeUnixSeconds: nextRemindeDateUnixSeconds,
+    });
+    console.log("次の通知をスケジュールしました");
   }
 
   async replyReminderSetting({
@@ -107,16 +158,6 @@ export class ReminderNotificationService {
       text: `${time} に設定しました`,
     });
 
-    const cloudTaskClient = this.getCloudTaskClient();
-    // 本番Cloud Runでインスタンスの取得に2分もかかっている。謎
-    console.log("cloudTaskClient直後");
-
-    const parent = cloudTaskClient.queuePath(
-      process.env.GOOGLE_CLOUD_PROJECT,
-      "asia-northeast1",
-      process.env.QUEUE_NAME,
-    );
-
     console.log("time", time);
     let nextTime = parse(time, "HH:mm", new Date());
     console.log("nextTime", nextTime);
@@ -154,30 +195,10 @@ export class ReminderNotificationService {
     console.log("zonedNextTimeUTC", zonedNextTimeUTC);
     const unixTime = getUnixTime(zonedNextTimeUTC);
     console.log("unixTime", unixTime);
-    const scheduleTime = {
-      seconds: unixTime,
-    };
 
-    await cloudTaskClient.createTask({
-      parent,
-      task: {
-        scheduleTime,
-        httpRequest: {
-          httpMethod: "POST",
-          url: `${process.env.BASE_URL}/api/reminder-notifications`,
-          body: Buffer.from(
-            JSON.stringify({
-              reminderNotificationSettingId: reminderNotificationSetting.id,
-            }),
-          ).toString("base64"),
-          oidcToken: {
-            serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL ?? undefined,
-          },
-          headers: {
-            "Content-Type": "application/json",
-          },
-        },
-      },
+    await this.scheduleNotification({
+      reminderNotificationSetting,
+      scheduleTimeUnixSeconds: unixTime,
     });
   }
 
@@ -248,14 +269,53 @@ export class ReminderNotificationService {
     return reminderNotificationSetting;
   }
 
-  private getCloudTaskClient() {
-    console.log("NODE_ENV", process.env.NODE_ENV);
-    return process.env.NODE_ENV === "production"
-      ? new CloudTasksClient({ fallback: true }) // Deadline exceeded が発生するので fallback: true を設定する.原因は不明
-      : new CloudTasksClient({
-          port: 8133,
-          servicePath: "localhost",
-          sslCreds: credentials.createInsecure(),
-        });
+  private async scheduleNotification({
+    reminderNotificationSetting,
+    scheduleTimeUnixSeconds,
+  }: {
+    reminderNotificationSetting: Pick<ReminderNotificationSetting, "id">;
+    scheduleTimeUnixSeconds: number;
+  }) {
+    console.log("cloudTaskClientのnew開始");
+    const cloudTaskClient =
+      process.env.NODE_ENV === "production"
+        ? new CloudTasksClient({ fallback: true }) // Deadline exceeded が発生するので fallback: true を設定する.原因は不明
+        : new CloudTasksClient({
+            port: 8133,
+            servicePath: "localhost",
+            sslCreds: credentials.createInsecure(),
+          });
+    // 本番Cloud Runでインスタンスの取得に2分もかかっている。謎
+    console.log("cloudTaskClientnew終了");
+
+    const parent = cloudTaskClient.queuePath(
+      process.env.GOOGLE_CLOUD_PROJECT,
+      "asia-northeast1",
+      process.env.QUEUE_NAME,
+    );
+
+    await cloudTaskClient.createTask({
+      parent,
+      task: {
+        scheduleTime: {
+          seconds: scheduleTimeUnixSeconds,
+        },
+        httpRequest: {
+          httpMethod: "POST",
+          url: `${process.env.BASE_URL}/api/reminder-notifications`,
+          body: Buffer.from(
+            JSON.stringify({
+              reminderNotificationSettingId: reminderNotificationSetting.id,
+            }),
+          ).toString("base64"),
+          oidcToken: {
+            serviceAccountEmail: process.env.SERVICE_ACCOUNT_EMAIL ?? undefined,
+          },
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      },
+    });
   }
 }
