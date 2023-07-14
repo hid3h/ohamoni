@@ -6,7 +6,7 @@ import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
 import { zonedTimeToUtc } from "date-fns-tz";
-import { addDays, getUnixTime, isPast, parse } from "date-fns";
+import { addDays, endOfDay, endOfToday, getUnixTime, isPast, parse, startOfToday } from "date-fns";
 
 @Injectable()
 export class ReminderNotificationService {
@@ -47,6 +47,10 @@ export class ReminderNotificationService {
     ) {
       return;
     }
+
+    // 今日の記録を入力済みなら送信しない
+    console.log("startOfToday()", startOfToday());
+    console.log("endOfToday()", endOfToday());
 
     const lineUserId = account.lineUserId;
     await this.linebotClient.pushMessage(lineUserId, {
