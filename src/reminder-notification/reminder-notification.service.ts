@@ -90,16 +90,14 @@ export class ReminderNotificationService {
     });
     if (!todayGettingUp || todayGettingUp.gettingUpDeletion) {
       console.log(
-        `入力済みなので通知を送りませんでした. reminderNotificationSettingId: ${reminderNotificationSettingId}`,
+        `入力忘れ防止を通知します。 reminderNotificationSettingId: ${reminderNotificationSettingId}`,
       );
-      return;
+      const lineUserId = account.lineUserId;
+      await this.linebotClient.pushMessage(lineUserId, {
+        type: "text",
+        text: "入力忘れ防止通知です。\n今日の記録を入力しましょう。",
+      });
     }
-
-    const lineUserId = account.lineUserId;
-    await this.linebotClient.pushMessage(lineUserId, {
-      type: "text",
-      text: "入力忘れ防止通知です。\n今日の記録を入力しましょう。",
-    });
 
     const remindeDate = parse(
       reminderNotificationSetting.reminderTime,
@@ -110,7 +108,7 @@ export class ReminderNotificationService {
     const nextRemindeDateUnixSeconds = getUnixTime(nextRemindeDate);
 
     console.log(
-      `入力忘れ防止を通知しました。次の通知をスケジュールします. nextRemindeDate: ${nextRemindeDate}, nextRemindeDateUnixSeconds: ${nextRemindeDateUnixSeconds}`,
+      `次の通知をスケジュールします. nextRemindeDate: ${nextRemindeDate}, nextRemindeDateUnixSeconds: ${nextRemindeDateUnixSeconds}`,
     );
     await this.scheduleNotification({
       reminderNotificationSetting,
