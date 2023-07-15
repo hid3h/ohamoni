@@ -55,20 +55,20 @@ export class ReminderNotificationService {
       "yyyy-MM-dd HH:mm",
     );
     const todayJSTString = nowJSTString.slice(0, 10);
-    const startOfJSTTodayUTC = new Date(todayJSTString + "T00:00:00.000");
-    const endOfJSTTodayUTC = new Date(todayJSTString + "T23:59:59.999");
+    const startOfJSTToday = toDate(todayJSTString + "T00:00:00.000+09:00");
+    const endOfJSTToday = toDate(todayJSTString + "T23:59:59.999+09:00");
     console.log(
-      `入力忘れ防止を通知しようとしています。nowUTC: ${nowUTC}, nowJSTString: ${nowJSTString}, todayJSTString: ${todayJSTString}, startOfJSTTodayUTC: ${startOfJSTTodayUTC}, endOfJSTTodayUTC: ${endOfJSTTodayUTC}`,
+      `入力忘れ防止を通知しようとしています。nowUTC: ${nowUTC}, nowJSTString: ${nowJSTString}, todayJSTString: ${todayJSTString}, startOfJSTToday: ${startOfJSTToday}, endOfJSTToday: ${endOfJSTToday}`,
     );
     // タイムゾーン日本
-    // 入力忘れ防止を通知しようとしています。nowUTC: Sat Jul 15 2023 12:07:00 GMT+0900 (Japan Standard Time), nowJSTString: 2023-07-15 12:07, todayJSTString: 2023-07-15, startOfJSTTodayUTC: Sat Jul 15 2023 00:00:00 GMT+0900 (Japan Standard Time), endOfJSTTodayUTC: Sat Jul 15 2023 23:59:59 GMT+0900 (Japan Standard Time)
+    // 入力忘れ防止を通知しようとしています。nowUTC: Sat Jul 15 2023 12:07:00 GMT+0900 (Japan Standard Time), nowJSTString: 2023-07-15 12:07, todayJSTString: 2023-07-15, startOfJSTToday: Sat Jul 15 2023 00:00:00 GMT+0900 (Japan Standard Time), endOfJSTToday: Sat Jul 15 2023 23:59:59 GMT+0900 (Japan Standard Time)
 
     const todayGettingUp = await this.prismaService.gettingUp.findFirst({
       where: {
         accountId: account.id,
         gotUpAt: {
-          gte: startOfJSTTodayUTC,
-          lte: endOfJSTTodayUTC,
+          gte: startOfJSTToday,
+          lte: endOfJSTToday,
         },
       },
       include: {
@@ -195,9 +195,7 @@ export class ReminderNotificationService {
       text: `入力忘れ防止通知を ${time} に設定しました`,
     });
 
-    console.log("time", time);
     let nextTime = parse(time, "HH:mm", new Date());
-    console.log("nextTime", nextTime);
 
     if (isPast(nextTime)) {
       nextTime = addDays(nextTime, 1);
@@ -317,7 +315,7 @@ export class ReminderNotificationService {
     reminderNotificationSetting: Pick<ReminderNotificationSetting, "id">;
     scheduleTimeUnixSeconds: number;
   }) {
-    console.log("cloudTaskClientのnew開始");
+    // console.log("cloudTaskClientのnew開始");
     const cloudTaskClient =
       process.env.NODE_ENV === "production"
         ? new CloudTasksClient({ fallback: true }) // Deadline exceeded が発生するので fallback: true を設定する.原因は不明
@@ -327,7 +325,7 @@ export class ReminderNotificationService {
             sslCreds: credentials.createInsecure(),
           });
     // 本番Cloud Runでインスタンスの取得に1分もかかっている。謎
-    console.log("cloudTaskClientnew終了");
+    // console.log("cloudTaskClientnew終了");
 
     const parent = cloudTaskClient.queuePath(
       process.env.GOOGLE_CLOUD_PROJECT,
