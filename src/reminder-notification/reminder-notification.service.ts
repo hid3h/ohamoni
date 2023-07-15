@@ -5,7 +5,7 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
-import { formatInTimeZone, zonedTimeToUtc } from "date-fns-tz";
+import { formatInTimeZone, toDate, zonedTimeToUtc } from "date-fns-tz";
 import { addDays, getUnixTime, isPast, parse } from "date-fns";
 
 @Injectable()
@@ -48,34 +48,18 @@ export class ReminderNotificationService {
       return;
     }
 
-    // 日本時間の7/14
-    // console.log("startOfToday()", startOfToday());
-    // console.log("endOfToday()", endOfToday());
-    // タイムゾーン日本
-    // startOfToday() 2023-07-13T15:00:00.000Z
-    // endOfToday() 2023-07-14T14:59:59.999Z
-    // タイムゾーンUTC
-    // startOfToday() 2023-07-14T00:00:00.000Z
-    // endOfToday() 2023-07-14T23:59:59.999Z
-    // startOfToday()とかは日本時間7月15日7時の時にUTCの7月14日の0時を返してくるからだめだ
     const nowUTC = new Date();
-    console.log("nowUTC", nowUTC);
     const nowJSTString = formatInTimeZone(
       nowUTC,
       "Asia/Tokyo",
       "yyyy-MM-dd HH:mm",
     );
-    console.log("nowJSTString", nowJSTString);
-
-    const startOfJSTTodayUTC = new Date(
-      nowJSTString.slice(0, 10) + " 00:00:00.000Z",
+    const todayJSTString = nowJSTString.slice(0, 10);
+    const startOfJSTTodayUTC = new Date(todayJSTString + " 00:00:00.000Z");
+    const endOfJSTTodayUTC = new Date(todayJSTString + " 23:59:59.999Z");
+    console.log(
+      `入力忘れ防止を通知しようとしています。nowUTC: ${nowUTC}, nowJSTString: ${nowJSTString}, todayJSTString: ${todayJSTString}, startOfJSTTodayUTC: ${startOfJSTTodayUTC}, endOfJSTTodayUTC: ${endOfJSTTodayUTC}`,
     );
-    console.log("startOfJSTTodayUTC", startOfJSTTodayUTC);
-
-    const endOfJSTTodayUTC = new Date(
-      nowJSTString.slice(0, 10) + " 23:59:59.999Z",
-    );
-    console.log("endOfJSTTodayUTC", endOfJSTTodayUTC);
 
     const todayGettingUp = await this.prismaService.gettingUp.findFirst({
       where: {
@@ -93,26 +77,28 @@ export class ReminderNotificationService {
       },
     });
     if (!todayGettingUp || todayGettingUp.gettingUpDeletion) {
-      console.log(
-        `入力忘れ防止を通知します。 reminderNotificationSettingId: ${reminderNotificationSettingId}`,
-      );
       const lineUserId = account.lineUserId;
       await this.linebotClient.pushMessage(lineUserId, {
         type: "text",
         text: "入力忘れ防止通知です。\n今日の記録を入力しましょう。",
       });
+      console.log(
+        `入力忘れ防止をLINE通知しました。reminderNotificationSettingId: ${reminderNotificationSettingId}`,
+      );
+    } else {
+      console.log(
+        `今日の分は入力済みなのでLINE通知しませんでした。todayGettingUpId: ${todayGettingUp.id}`,
+      );
     }
 
-    const remindeDate = parse(
-      reminderNotificationSetting.reminderTime,
-      "HH:mm",
-      new Date(),
+    const remindeDateUTC = toDate(
+      `${todayJSTString}T${reminderNotificationSetting.reminderTime}:00+09:00`,
     );
-    const nextRemindeDate = addDays(remindeDate, 1);
-    const nextRemindeDateUnixSeconds = getUnixTime(nextRemindeDate);
+    const nextRemindeDateUTC = addDays(remindeDateUTC, 1);
+    const nextRemindeDateUnixSeconds = getUnixTime(nextRemindeDateUTC);
 
     console.log(
-      `次の日の通知をスケジュールします. nextRemindeDate: ${nextRemindeDate}, nextRemindeDateUnixSeconds: ${nextRemindeDateUnixSeconds}`,
+      `次の日の通知をスケジュールします. remindeDateUTC: ${remindeDateUTC}, nextRemindeDateUTC: ${nextRemindeDateUTC}, nextRemindeDateUnixSeconds: ${nextRemindeDateUnixSeconds}`,
     );
     await this.scheduleNotification({
       reminderNotificationSetting,
