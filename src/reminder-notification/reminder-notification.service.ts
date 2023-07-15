@@ -234,6 +234,9 @@ export class ReminderNotificationService {
     console.log(
       `入力忘れ防止通知を設定します. time: ${time}, nextTime: ${nextTime}, zonedNextTimeUTC: ${zonedNextTimeUTC}, unixTime: ${unixTime}`,
     );
+    // タイムゾーンUTC
+    // time: 12:44, nextTime: Sat Jul 15 2023 12:44:00 GMT+0000 (協定世界時), zonedNextTimeUTC: Sat Jul 15 2023 03:44:00 GMT+0000 (協定世界時), unixTime: 1689392640"
+    // nextTimeのとこが嘘になってる
     await this.scheduleNotification({
       reminderNotificationSetting,
       scheduleTimeUnixSeconds: unixTime,
