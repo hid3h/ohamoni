@@ -5,8 +5,8 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
-import { formatInTimeZone, toDate, zonedTimeToUtc } from "date-fns-tz";
-import { addDays, getUnixTime, isPast, parse } from "date-fns";
+import { formatInTimeZone, toDate } from "date-fns-tz";
+import { addDays, getUnixTime, isPast } from "date-fns";
 
 @Injectable()
 export class ReminderNotificationService {
@@ -48,9 +48,9 @@ export class ReminderNotificationService {
       return;
     }
 
-    const nowUTC = new Date();
+    const now = new Date();
     const nowJSTString = formatInTimeZone(
-      nowUTC,
+      now,
       "Asia/Tokyo",
       "yyyy-MM-dd HH:mm",
     );
@@ -58,10 +58,10 @@ export class ReminderNotificationService {
     const startOfJSTToday = toDate(todayJSTString + "T00:00:00.000+09:00");
     const endOfJSTToday = toDate(todayJSTString + "T23:59:59.999+09:00");
     console.log(
-      `入力忘れ防止を通知しようとしています。nowUTC: ${nowUTC}, nowJSTString: ${nowJSTString}, todayJSTString: ${todayJSTString}, startOfJSTToday: ${startOfJSTToday}, endOfJSTToday: ${endOfJSTToday}`,
+      `入力忘れ防止を通知しようとしています。now: ${now}, nowJSTString: ${nowJSTString}, todayJSTString: ${todayJSTString}, startOfJSTToday: ${startOfJSTToday}, endOfJSTToday: ${endOfJSTToday}`,
     );
     // タイムゾーン日本
-    // 入力忘れ防止を通知しようとしています。nowUTC: Sat Jul 15 2023 12:07:00 GMT+0900 (Japan Standard Time), nowJSTString: 2023-07-15 12:07, todayJSTString: 2023-07-15, startOfJSTToday: Sat Jul 15 2023 00:00:00 GMT+0900 (Japan Standard Time), endOfJSTToday: Sat Jul 15 2023 23:59:59 GMT+0900 (Japan Standard Time)
+    // 入力忘れ防止を通知しようとしています。now: Sat Jul 15 2023 12:07:00 GMT+0900 (Japan Standard Time), nowJSTString: 2023-07-15 12:07, todayJSTString: 2023-07-15, startOfJSTToday: Sat Jul 15 2023 00:00:00 GMT+0900 (Japan Standard Time), endOfJSTToday: Sat Jul 15 2023 23:59:59 GMT+0900 (Japan Standard Time)
 
     const todayGettingUp = await this.prismaService.gettingUp.findFirst({
       where: {
@@ -195,44 +195,23 @@ export class ReminderNotificationService {
       text: `入力忘れ防止通知を ${time} に設定しました`,
     });
 
-    let nextTime = parse(time, "HH:mm", new Date());
+    const now = new Date();
+    const nowJSTString = formatInTimeZone(
+      now,
+      "Asia/Tokyo",
+      "yyyy-MM-dd HH:mm",
+    );
+    const todayJSTString = nowJSTString.slice(0, 10);
+    const todayRemindeDate = toDate(`${todayJSTString}T${time}:00+09:00`);
 
-    if (isPast(nextTime)) {
-      nextTime = addDays(nextTime, 1);
-      console.log("nextTime2", nextTime);
-    }
-    // time 08:50
-    // タイムゾーン日本
-    // nextTime 2023-07-12T23:50:00.000Z
-    // nextTime2 2023-07-13T23:50:00.000Z
-    // UTCの今日になる
+    const remindeDate = isPast(todayRemindeDate)
+      ? addDays(todayRemindeDate, 1)
+      : todayRemindeDate;
 
-    // タイムゾーンUTC
-    //  time 07:56
-    // nextTime 2023-07-13T07:56:00.000Z
-    // nextTime2 2023-07-14T07:56:00.000Z
-    // 日本時間になってる
-
-    // console.log("zone1", zonedTimeToUtc(nextTime, "Asia/Tokyo"));
-    // console.log("zone2", zonedTimeToUtc(nextTime, "UTC"));
-    // タイムゾーン日本
-    // nextTime 2023-07-13T11:33:00.000Z
-    // zone1 2023-07-13T11:33:00.000Z
-    // zone2 2023-07-13T20:33:00.000Z
-    // console.log("getUnixTime(nextTime)", getUnixTime(nextTime));
-    // タイムゾーンUTC
-    // time 20:51
-    // nextTime 2023-07-13T20:51:00.000Z
-    // zone1 2023-07-13T11:51:00.000Z
-    // zone2 2023-07-13T20:51:00.000Z
-    // getUnixTime(nextTime) 1689281460
-    const zonedNextTimeUTC = zonedTimeToUtc(nextTime, "Asia/Tokyo");
-    // console.log("zonedNextTimeUTC", zonedNextTimeUTC);
-    const unixTime = getUnixTime(zonedNextTimeUTC);
-    // console.log("unixTime", unixTime);
+    const unixTime = getUnixTime(remindeDate);
 
     console.log(
-      `入力忘れ防止通知を設定します. time: ${time}, nextTime: ${nextTime}, zonedNextTimeUTC: ${zonedNextTimeUTC}, unixTime: ${unixTime}`,
+      `入力忘れ防止通知を設定します. time: ${time}, todayRemindeDate: ${todayRemindeDate}, remindeDate: ${remindeDate}, unixTime: ${unixTime}`,
     );
     // タイムゾーンUTC
     // time: 12:44, nextTime: Sat Jul 15 2023 12:44:00 GMT+0000 (協定世界時), zonedNextTimeUTC: Sat Jul 15 2023 03:44:00 GMT+0000 (協定世界時), unixTime: 1689392640"
