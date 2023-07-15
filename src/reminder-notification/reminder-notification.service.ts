@@ -5,15 +5,8 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import { CloudTasksClient } from "@google-cloud/tasks";
 import { credentials } from "@grpc/grpc-js";
-import { zonedTimeToUtc } from "date-fns-tz";
-import {
-  addDays,
-  endOfToday,
-  getUnixTime,
-  isPast,
-  parse,
-  startOfToday,
-} from "date-fns";
+import { formatInTimeZone, zonedTimeToUtc } from "date-fns-tz";
+import { addDays, getUnixTime, isPast, parse } from "date-fns";
 
 @Injectable()
 export class ReminderNotificationService {
@@ -55,6 +48,7 @@ export class ReminderNotificationService {
       return;
     }
 
+    // 日本時間の7/14
     // console.log("startOfToday()", startOfToday());
     // console.log("endOfToday()", endOfToday());
     // タイムゾーン日本
@@ -63,22 +57,32 @@ export class ReminderNotificationService {
     // タイムゾーンUTC
     // startOfToday() 2023-07-14T00:00:00.000Z
     // endOfToday() 2023-07-14T23:59:59.999Z
-    const startOfTodayUTC = zonedTimeToUtc(startOfToday(), "Asia/Tokyo");
-    const endOfTodayUTC = zonedTimeToUtc(endOfToday(), "Asia/Tokyo");
-    // console.log("startOfTodayUTC", startOfTodayUTC);
-    // console.log("endOfTodayUTC", endOfTodayUTC);
-    // タイムゾーン日本
-    // startOfTodayUTC 2023-07-13T15:00:00.000Z
-    // endOfTodayUTC 2023-07-14T14:59:59.999Z
-    // タイムゾーンUTC
-    // startOfTodayUTC 2023-07-13T15:00:00.000Z
-    // endOfTodayUTC 2023-07-14T14:59:59.999Z
+    // startOfToday()とかは日本時間7月15日7時の時にUTCの7月14日の0時を返してくるからだめだ
+    const nowUTC = new Date();
+    console.log("nowUTC", nowUTC);
+    const nowJSTString = formatInTimeZone(
+      nowUTC,
+      "Asia/Tokyo",
+      "yyyy-MM-dd HH:mm",
+    );
+    console.log("nowJSTString", nowJSTString);
+
+    const startOfJSTTodayUTC = new Date(
+      nowJSTString.slice(0, 10) + " 00:00:00.000Z",
+    );
+    console.log("startOfJSTTodayUTC", startOfJSTTodayUTC);
+
+    const endOfJSTTodayUTC = new Date(
+      nowJSTString.slice(0, 10) + " 23:59:59.999Z",
+    );
+    console.log("endOfJSTTodayUTC", endOfJSTTodayUTC);
+
     const todayGettingUp = await this.prismaService.gettingUp.findFirst({
       where: {
         accountId: account.id,
         gotUpAt: {
-          gte: startOfTodayUTC,
-          lte: endOfTodayUTC,
+          gte: startOfJSTTodayUTC,
+          lte: endOfJSTTodayUTC,
         },
       },
       include: {
@@ -108,13 +112,13 @@ export class ReminderNotificationService {
     const nextRemindeDateUnixSeconds = getUnixTime(nextRemindeDate);
 
     console.log(
-      `次の通知をスケジュールします. nextRemindeDate: ${nextRemindeDate}, nextRemindeDateUnixSeconds: ${nextRemindeDateUnixSeconds}`,
+      `次の日の通知をスケジュールします. nextRemindeDate: ${nextRemindeDate}, nextRemindeDateUnixSeconds: ${nextRemindeDateUnixSeconds}`,
     );
     await this.scheduleNotification({
       reminderNotificationSetting,
       scheduleTimeUnixSeconds: nextRemindeDateUnixSeconds,
     });
-    console.log("次の通知をスケジュールしました");
+    console.log("次の日の通知をスケジュールしました");
   }
 
   async replyReminderSetting({
