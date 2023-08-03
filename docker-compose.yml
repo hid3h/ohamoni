@@ -6,10 +6,10 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
     ports:
-      - 3331:3306
+      - 3332:3306
     volumes:
-      - ../mysql/mysql8/mysql_data:/var/lib/mysql # データの永続化 ホストのディレクトリ:コンテナ内のディレクトリで中身が同期される
-      - ../mysql/mysql8/conf.d:/etc/mysql/conf.d
+      - ./mysql8/mysql_data:/var/lib/mysql # データの永続化 ホストのディレクトリ:コンテナ内のディレクトリで中身が同期される
+      - ./mysql8/conf.d:/etc/mysql/conf.d
   gcloud-tasks-emulator:
     image: ghcr.io/aertje/cloud-tasks-emulator:latest
     command: >
