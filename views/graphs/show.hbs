@@ -1,1 +1,49 @@
-aaaaaa
+<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+const LIFF_ID = "{{ LIFF_ID }}";
+
+async function initializeLiff() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
+  } catch (error) {
+    console.error("Error initializing LIFF:", error);
+  }
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
+  console.log("start");
+  await initializeLiff();
+
+  const lineIdToken = await liff.getIDToken();
+
+  const query = new URLSearchParams({lineIdToken});
+  const response = await fetch(`/api/getting-ups?${query}`)
+
+  const ctx = document.getElementById('myChart');
+
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+      datasets: [{
+        label: '# of Votes',
+        data: [12, 19, 3, 5, 2, 3],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+});
+</script>
+
+<div>
+  <canvas id="myChart"></canvas>
+</div>
