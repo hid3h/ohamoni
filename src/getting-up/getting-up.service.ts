@@ -5,7 +5,6 @@ import {
   add,
   differenceInDays,
   differenceInMilliseconds,
-  endOfDay,
   startOfDay,
 } from "date-fns";
 import { formatInTimeZone, toDate, utcToZonedTime } from "date-fns-tz";
@@ -50,17 +49,13 @@ export class GettingUpService {
     });
 
     const labels = Object.keys(gettingUps);
-    console.log("labels", labels);
     const data = labels.map((label) => {
       const gettingUp = gettingUps[label];
       if (!gettingUp) {
         return undefined;
       }
-      console.log("gettingUp.gotUpAt", gettingUp.gotUpAt);
       const jstDate = utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo");
-      console.log("jstDate", jstDate);
       const startOfJstDate = startOfDay(jstDate);
-      console.log("startOfJstDate", startOfJstDate);
       const diffInMs = differenceInMilliseconds(jstDate, startOfJstDate);
 
       return diffInMs;
@@ -203,7 +198,7 @@ export class GettingUpService {
         accountId,
         gotUpAt: {
           gte: fromDate,
-          lt: endDate,
+          lte: endDate,
         },
       },
       include: {
@@ -217,11 +212,6 @@ export class GettingUpService {
     const gettingUpsWithJSTString = gettingUps.map((gettingUp) => {
       return {
         ...gettingUp,
-        gotUpAtJSTString: formatInTimeZone(
-          gettingUp.gotUpAt,
-          "Asia/Tokyo",
-          "yyyy-MM-dd'T'HH:mm",
-        ),
         gotUpDayJSTString: formatInTimeZone(
           gettingUp.gotUpAt,
           "Asia/Tokyo",
