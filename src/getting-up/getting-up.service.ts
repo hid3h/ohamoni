@@ -189,11 +189,13 @@ export class GettingUpService {
     const accountId = account.id;
 
     const now = new Date();
+    console.log("now", now);
     const endDateOfJSTTodayString = formatInTimeZone(
       now,
       "Asia/Tokyo",
       "yyyy-MM-dd'T'14:59:59.999'Z'",
     );
+    console.log("endDateOfJSTTodayString", endDateOfJSTTodayString);
     const endDate = toDate ?? new Date(endDateOfJSTTodayString);
     console.log("endDate", endDate);
     const gettingUps = await this.prismaService.gettingUp.findMany({
