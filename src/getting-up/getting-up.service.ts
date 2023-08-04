@@ -1,8 +1,14 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { Account, GettingUp } from "@prisma/client";
-import { add, startOfDay } from "date-fns";
-import { formatInTimeZone, toDate } from "date-fns-tz";
+import {
+  add,
+  differenceInDays,
+  differenceInMilliseconds,
+  endOfDay,
+  startOfDay,
+} from "date-fns";
+import { formatInTimeZone, toDate, utcToZonedTime } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -37,11 +43,32 @@ export class GettingUpService {
     });
 
     const weekAgoDate = add(new Date(), { weeks: -1 });
-    console.log("weekAgoDate", weekAgoDate);
     const fromDate = startOfDay(weekAgoDate);
-    console.log("fromDate", startOfDay(fromDate));
-    const gettingUps = await this.fetchGettingUpsByDay({ account, fromDate });
-    console.log("gettingUps", gettingUps);
+    const gettingUps = await this.fetchGettingUpsByJSTDay({
+      account,
+      fromDate,
+    });
+
+    const labels = Object.keys(gettingUps);
+    const data = labels.map((label) => {
+      const gettingUp = gettingUps[label];
+      if (!gettingUp) {
+        return undefined;
+      }
+      console.log("gettingUp.gotUpAt", gettingUp.gotUpAt);
+      const jstDate = utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo");
+      console.log("jstDate", jstDate);
+      const startOfJstDate = startOfDay(jstDate);
+      console.log("startOfJstDate", startOfJstDate);
+      const diffInMs = differenceInMilliseconds(jstDate, startOfJstDate);
+      console.log("diffInMs", diffInMs);
+      return diffInMs;
+    });
+
+    return {
+      labels: labels.reverse(),
+      data: data.reverse(),
+    };
   }
 
   // datetime: '2023-07-03T20:58'
@@ -149,50 +176,76 @@ export class GettingUpService {
     });
   }
 
-  private async fetchGettingUpsByDay({
+  private async fetchGettingUpsByJSTDay({
     account,
     fromDate,
+    toDate,
   }: {
     account: Pick<Account, "id">;
     fromDate: Date;
+    toDate?: Date;
   }) {
     const accountId = account.id;
+    const endDate = toDate ?? endOfDay(new Date());
+    console.log("endDate", endDate);
     const gettingUps = await this.prismaService.gettingUp.findMany({
       where: {
         accountId,
         gotUpAt: {
           gte: fromDate,
+          lt: endDate,
         },
       },
       include: {
         gettingUpDeletion: true,
       },
       orderBy: {
-        gotUpAt: "asc",
+        registeredAt: "desc",
       },
     });
 
-    const gettingUpsOrderedByRegisteredAtDesc = gettingUps.sort(
-      (a, b) => b.registeredAt.getTime() - a.registeredAt.getTime(),
-    );
+    const gettingUpsWithJSTString = gettingUps.map((gettingUp) => {
+      return {
+        ...gettingUp,
+        gotUpAtJSTString: formatInTimeZone(
+          gettingUp.gotUpAt,
+          "Asia/Tokyo",
+          "yyyy-MM-dd'T'HH:mm",
+        ),
+        gotUpDayJSTString: formatInTimeZone(
+          gettingUp.gotUpAt,
+          "Asia/Tokyo",
+          "MM/dd(E)",
+        ),
+      };
+    });
+    console.log("gettingUpsWithJSTString", gettingUpsWithJSTString);
 
-    const gettingUpMapByJSTDay = new Map<string, GettingUp>();
-    for (const gettingUp of gettingUpsOrderedByRegisteredAtDesc) {
-      const gotUpDateJST = formatInTimeZone(
-        gettingUp.gotUpAt,
+    const gettingUpMapByJSTDay = new Map<
+      string,
+      (typeof gettingUpsWithJSTString)[0]
+    >();
+    const count = differenceInDays(endDate, fromDate);
+    console.log("count", count);
+    for (let i = 0; i < count; i++) {
+      const targetDateUTC = add(endDate, { days: -i });
+      const targetDayJSTISOString = formatInTimeZone(
+        targetDateUTC,
         "Asia/Tokyo",
         "MM/dd(E)",
       );
-      console.log("gettingUp.gotUpAt", gettingUp.gotUpAt);
-      console.log("gotUpDateJST", gotUpDateJST);
-      if (!gettingUpMapByJSTDay.has(gotUpDateJST)) {
-        gettingUpMapByJSTDay.set(
-          gotUpDateJST,
-          gettingUp.gettingUpDeletion ? undefined : gettingUp,
-        );
+      const gettingUp = gettingUpsWithJSTString.find((gettingUp) => {
+        return targetDayJSTISOString === gettingUp.gotUpDayJSTString;
+      });
+
+      if (gettingUp && !gettingUp.gettingUpDeletion) {
+        gettingUpMapByJSTDay[targetDayJSTISOString] = gettingUp;
+      } else {
+        gettingUpMapByJSTDay[targetDayJSTISOString] = undefined;
       }
     }
-    console.log("gettingUpMapByJSTDay", gettingUpMapByJSTDay);
+
+    return gettingUpMapByJSTDay;
   }
 
   private async fetchGettingUpsFrom({

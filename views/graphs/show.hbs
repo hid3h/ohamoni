@@ -20,15 +20,16 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   const query = new URLSearchParams({lineIdToken});
   const response = await fetch(`/api/getting-ups?${query}`)
+  const responseData = await response.json()
 
   const ctx = document.getElementById('myChart');
 
-  const labels = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Black"]
+  const labels = responseData.labels;
   const data = {
     labels: labels,
     datasets: [{
       label: 'My First Dataset',
-      data: [65, 59, 80, 81, 56, 55, 40],
+      data: responseData.data,
       fill: false,
       borderColor: 'rgb(75, 192, 192)',
       tension: 0.1
