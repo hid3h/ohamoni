@@ -187,10 +187,14 @@ export class GettingUpService {
     toDate?: Date;
   }) {
     const accountId = account.id;
+
     const now = new Date();
-    console.log("now", now);
-    now.setHours(15, 0, 0, 0);
-    const endDate = toDate ?? now;
+    const endDateOfJSTTodayString = formatInTimeZone(
+      now,
+      "Asia/Tokyo",
+      "yyyy-MM-dd'T'14:59:59.999'Z'",
+    );
+    const endDate = toDate ?? new Date(endDateOfJSTTodayString);
     console.log("endDate", endDate);
     const gettingUps = await this.prismaService.gettingUp.findMany({
       where: {
@@ -237,7 +241,7 @@ export class GettingUpService {
         "Asia/Tokyo",
         "MM/dd(E)",
       );
-      console.log("targetDayJSTISOString", targetDayJSTISOString)
+      console.log("targetDayJSTISOString", targetDayJSTISOString);
       const gettingUp = gettingUpsWithJSTString.find((gettingUp) => {
         return targetDayJSTISOString === gettingUp.gotUpDayJSTString;
       });
