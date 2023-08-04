@@ -1,7 +1,7 @@
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { GettingUp } from "@prisma/client";
-import { add } from "date-fns";
+import { Account, GettingUp } from "@prisma/client";
+import { add, startOfDay } from "date-fns";
 import { formatInTimeZone, toDate } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
@@ -17,6 +17,31 @@ export class GettingUpService {
     this.linebotClient = new Client({
       channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
     });
+  }
+
+  async fetchWeekly({ lineUserId }: { lineUserId: string }) {
+    // const labels = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Black"]
+    // const data = {
+    //   labels: labels,
+    //   datasets: [{
+    //     label: 'My First Dataset',
+    //     data: [65, 59, 80, 81, 56, 55, 40],
+    //     fill: false,
+    //     borderColor: 'rgb(75, 192, 192)',
+    //     tension: 0.1
+    //   }]
+    // };
+
+    const account = await this.accountsService.findOrRegister({
+      lineUserId,
+    });
+
+    const weekAgoDate = add(new Date(), { weeks: -1 });
+    console.log("weekAgoDate", weekAgoDate);
+    const fromDate = startOfDay(weekAgoDate);
+    console.log("fromDate", startOfDay(fromDate));
+    const gettingUps = await this.fetchGettingUpsByDay({ account, fromDate });
+    console.log("gettingUps", gettingUps);
   }
 
   // datetime: '2023-07-03T20:58'
@@ -73,7 +98,7 @@ export class GettingUpService {
     });
 
     const gettingUps = await this.fetchGettingUpsFrom({
-      accountId: account.id,
+      account,
       fromDate: new Date(add(gotUpAt, { weeks: -1 })),
     });
 
@@ -124,13 +149,60 @@ export class GettingUpService {
     });
   }
 
-  private async fetchGettingUpsFrom({
-    accountId,
+  private async fetchGettingUpsByDay({
+    account,
     fromDate,
   }: {
-    accountId: string;
+    account: Pick<Account, "id">;
     fromDate: Date;
   }) {
+    const accountId = account.id;
+    const gettingUps = await this.prismaService.gettingUp.findMany({
+      where: {
+        accountId,
+        gotUpAt: {
+          gte: fromDate,
+        },
+      },
+      include: {
+        gettingUpDeletion: true,
+      },
+      orderBy: {
+        gotUpAt: "asc",
+      },
+    });
+
+    const gettingUpsOrderedByRegisteredAtDesc = gettingUps.sort(
+      (a, b) => b.registeredAt.getTime() - a.registeredAt.getTime(),
+    );
+
+    const gettingUpMapByJSTDay = new Map<string, GettingUp>();
+    for (const gettingUp of gettingUpsOrderedByRegisteredAtDesc) {
+      const gotUpDateJST = formatInTimeZone(
+        gettingUp.gotUpAt,
+        "Asia/Tokyo",
+        "MM/dd(E)",
+      );
+      console.log("gettingUp.gotUpAt", gettingUp.gotUpAt);
+      console.log("gotUpDateJST", gotUpDateJST);
+      if (!gettingUpMapByJSTDay.has(gotUpDateJST)) {
+        gettingUpMapByJSTDay.set(
+          gotUpDateJST,
+          gettingUp.gettingUpDeletion ? undefined : gettingUp,
+        );
+      }
+    }
+    console.log("gettingUpMapByJSTDay", gettingUpMapByJSTDay);
+  }
+
+  private async fetchGettingUpsFrom({
+    account,
+    fromDate,
+  }: {
+    account: Pick<Account, "id">;
+    fromDate: Date;
+  }) {
+    const accountId = account.id;
     return await this.prismaService.gettingUp.findMany({
       where: {
         accountId,
