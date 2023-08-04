@@ -220,14 +220,12 @@ export class GettingUpService {
         ),
       };
     });
-    console.log("gettingUpsWithJSTString", gettingUpsWithJSTString);
 
     const gettingUpMapByJSTDay = new Map<
       string,
       (typeof gettingUpsWithJSTString)[0]
     >();
     const count = differenceInDays(endDate, fromDate);
-    console.log("count", count);
     for (let i = 0; i < count; i++) {
       const targetDateUTC = add(endDate, { days: -i });
       console.log("targetDateUTC", targetDateUTC);
