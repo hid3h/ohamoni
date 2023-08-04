@@ -62,7 +62,9 @@ export class GettingUpService {
     });
 
     return {
-      labels: labels.reverse(),
+      labels: labels.reverse().map((key) => {
+        return this.replaceDayOfWeekWithJapanese(key.slice(3));
+      }),
       data: data.reverse(),
     };
   }
@@ -157,7 +159,7 @@ export class GettingUpService {
     const sortedKeys = Object.keys(gettingUpMapByJSTDayISOString);
     const gettingUpRecordMessages = sortedKeys.map((key) => {
       const gettingUp = gettingUpMapByJSTDayISOString[key];
-      return `${key} ${
+      return `${this.replaceDayOfWeekWithJapanese(key)} ${
         gettingUp
           ? formatInTimeZone(gettingUp.gotUpAt, "Asia/Tokyo", "HH:mm")
           : "なし"
@@ -267,5 +269,26 @@ export class GettingUpService {
         gettingUpDeletion: true,
       },
     });
+  }
+
+  private replaceDayOfWeekWithJapanese(str) {
+    const daysOfWeek = {
+      Sun: "日",
+      Mon: "月",
+      Tue: "火",
+      Wed: "水",
+      Thu: "木",
+      Fri: "金",
+      Sat: "土",
+    };
+
+    let replacedStr = str;
+
+    for (const day in daysOfWeek) {
+      const regex = new RegExp(day, "g");
+      replacedStr = replacedStr.replace(regex, daysOfWeek[day]);
+    }
+
+    return replacedStr;
   }
 }
