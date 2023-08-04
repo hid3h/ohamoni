@@ -50,6 +50,7 @@ export class GettingUpService {
     });
 
     const labels = Object.keys(gettingUps);
+    console.log("labels", labels)
     const data = labels.map((label) => {
       const gettingUp = gettingUps[label];
       if (!gettingUp) {
