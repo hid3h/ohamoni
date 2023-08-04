@@ -8,7 +8,7 @@ async function initializeLiff() {
   try {
     await liff.init({ liffId: LIFF_ID });
   } catch (error) {
-    console.error("Error initializing LIFF:", error);
+    alert(`Error initializing LIFF:, ${error}`);
   }
 }
 
