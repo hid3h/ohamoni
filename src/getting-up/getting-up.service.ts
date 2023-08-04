@@ -230,6 +230,7 @@ export class GettingUpService {
     console.log("count", count);
     for (let i = 0; i < count; i++) {
       const targetDateUTC = add(endDate, { days: -i });
+      console.log("targetDateUTC", targetDateUTC);
       const targetDayJSTISOString = formatInTimeZone(
         targetDateUTC,
         "Asia/Tokyo",
