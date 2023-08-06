@@ -1,151 +1,154 @@
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<script
+  charset="utf-8"
+  src="https://static.line-scdn.net/liff/edge/2/sdk.js"
+></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-const LIFF_ID = "{{ LIFF_ID }}";
-
-async function initializeLiff() {
-  try {
-    await liff.init({ liffId: LIFF_ID });
-  } catch (error) {
-    alert(`Error initializing LIFF:, ${error}`);
-  }
-}
-
-// 0時からのミリ秒を時間:分に変換する関数
-const msToTime = function(s) {
-  const pad = function(n, z) {
-    z = z || 2;
-    return ('00' + n).slice(-z);
-  };
-  const ms = s % 1000;
-  s = (s - ms) / 1000;
-  const secs = s % 60;
-  s = (s - secs) / 60;
-  const mins = s % 60;
-  const hrs = (s - mins) / 60;
-  return pad(hrs) + ':' + pad(mins);
-};
-
-window.addEventListener("DOMContentLoaded", async () => {
-  console.log("start");
-  await initializeLiff();
-
-  const lineIdToken = await liff.getIDToken();
-
-  const query = new URLSearchParams({lineIdToken});
-  const response = await fetch(`/api/getting-ups?${query}`)
-  const responseData = await response.json()
-
-  const ctx = document.getElementById('myChart');
-
-  const labels = responseData.labels;
-  const data = {
-    labels: labels,
-    datasets: [{
-      label: 'My First Dataset',
-      data: responseData.data,
-      fill: false,
-      borderColor: 'rgb(75, 192, 192)',
-      tension: 0.1
-    }]
-  };
-
-  // 小数点以下を切り捨てる関数
-  function floorTo(value, base) {
-    return Math.floor(value / base) * base;
-  }
-
-  // 小数点以下を切り上げる関数
-  function ceilTo(value, base) {
-    return Math.ceil(value / base) * base;
-  }
-
-  // データから最小値と最大値を取得
-  let minValue = Infinity;
-  let maxValue = -Infinity;
-  responseData.data.forEach(val => {
-    if (val !== null && val !== undefined) {
-      if (val < minValue) minValue = val;
-      if (val > maxValue) maxValue = val;
+  const LIFF_ID = "{{LIFF_ID}}";
+  async function initializeLiff() {
+    try {
+      await liff.init({ liffId: LIFF_ID });
+    } catch (error) {
+      alert(`Error initializing LIFF:, ${error}`);
     }
-  });
+  }
 
-  // データが存在しない場合のデフォルト値を設定
-  if (minValue === Infinity) minValue = 6 * 3600000; // 6:00
-  if (maxValue === -Infinity) maxValue = 9 * 3600000; // 9:00
+  // 0時からのミリ秒を時間:分に変換する関数
+  const msToTime = function (s) {
+    const pad = function (n, z) {
+      z = z || 2;
+      return ("00" + n).slice(-z);
+    };
+    const ms = s % 1000;
+    s = (s - ms) / 1000;
+    const secs = s % 60;
+    s = (s - secs) / 60;
+    const mins = s % 60;
+    const hrs = (s - mins) / 60;
+    return pad(hrs) + ":" + pad(mins);
+  };
 
-  // y軸のminを1時間前、maxを1時間後に設定
-  minValue = minValue - 3600000;
-  maxValue = maxValue + 3600000;
-
-  // 切りの良い値に調整
-  minValue = floorTo(minValue, 1800000);
-  maxValue = ceilTo(maxValue, 1800000);
-
-  new Chart(ctx, {
-    type: 'line',
-    data,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          ticks: {
-            font: {
-              size: 36,
-            }
-          }
+  window.addEventListener("DOMContentLoaded", async () => {
+    console.log("start");
+    await initializeLiff();
+    const lineIdToken = await liff.getIDToken();
+    const query = new URLSearchParams({ lineIdToken });
+    const response = await fetch(`/api/getting-ups?${query}`);
+    const responseData = await response.json();
+    const ctx = document.getElementById("myChart");
+    const labels = responseData.labels;
+    const data = {
+      labels: labels,
+      datasets: [
+        {
+          label: "My First Dataset",
+          data: responseData.data,
+          fill: false,
+          borderColor: "rgb(75, 192, 192)",
+          tension: 0.1,
         },
-        y: {
-          min: minValue, // 最小値を設定
-          max: maxValue, // 最大値を設定
-          ticks: {
-            // Include a dollar sign in the ticks
-             callback: function(value, index, values) {
-            if (value % 1800000 === 0) { // 30分単位の刻みにする
-              return msToTime(value);
-            } else {
-              return '';
-            }
-          },
-          stepSize: 1800000, // Y軸の刻みを30分単位に設定
-            font: {
-              size: 36,
-            }
-          },
-        }
-      },
-      elements: {
-        point: {
-          radius: 10,
-          hitRadius: 40,
-        }
-      },
-      plugins: {
-        legend: {
-          display: false // レジェンドを非表示にする
-        },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              let label = "";
+      ],
+    };
 
-              if (context.parsed.y !== null) {
-                label += new Date(context.parsed.y).toISOString().substr(11, 5);
-              }
-              return label;
+    // 小数点以下を切り捨てる関数
+    function floorTo(value, base) {
+      return Math.floor(value / base) * base;
+    }
+
+    // 小数点以下を切り上げる関数
+    function ceilTo(value, base) {
+      return Math.ceil(value / base) * base;
+    }
+
+    // データから最小値と最大値を取得
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+    responseData.data.forEach((val) => {
+      if (val !== null && val !== undefined) {
+        if (val < minValue) minValue = val;
+        if (val > maxValue) maxValue = val;
+      }
+    });
+
+    // データが存在しない場合のデフォルト値を設定
+    if (minValue === Infinity) minValue = 6 * 3600000; // 6:00
+    if (maxValue === -Infinity) maxValue = 9 * 3600000; // 9:00
+
+    // y軸のminを1時間前、maxを1時間後に設定
+    minValue = minValue - 3600000;
+    maxValue = maxValue + 3600000;
+
+    // 切りの良い値に調整
+    minValue = floorTo(minValue, 1800000);
+    maxValue = ceilTo(maxValue, 1800000);
+
+    new Chart(ctx, {
+      type: "line",
+      data,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            ticks: {
+              font: {
+                size: 36,
+              },
             },
           },
-          bodyFont: {
-            size: 36,
+          y: {
+            min: minValue, // 最小値を設定
+            max: maxValue, // 最大値を設定
+            ticks: {
+              // Include a dollar sign in the ticks
+              callback: function (value, index, values) {
+                if (value % 1800000 === 0) {
+                  // 30分単位の刻みにする
+                  return msToTime(value);
+                } else {
+                  return "";
+                }
+              },
+              stepSize: 1800000, // Y軸の刻みを30分単位に設定
+              font: {
+                size: 36,
+              },
+            },
           },
-          padding: 20,
-        }
-      }
-    }
+        },
+        elements: {
+          point: {
+            radius: 10,
+            hitRadius: 40,
+          },
+        },
+        plugins: {
+          legend: {
+            display: false, // レジェンドを非表示にする
+          },
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                let label = "";
+                if (context.parsed.y !== null) {
+                  label +=
+                    new Date(context.parsed.y)
+                      .toISOString()
+                      .substr(11, 5);
+                }
+                return label;
+              },
+            },
+            bodyFont: {
+              size: 36,
+            },
+            padding: 20,
+          },
+        },
+      },
+    });
   });
-});
 </script>
 
 <div style="height: 100%; width: 100%">
