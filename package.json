@@ -21,7 +21,8 @@
     "prisma": "prisma",
     "prisma:generate": "prisma generate",
     "prisma:migrate:dev": "prisma migrate dev",
-    "tailwindcss": "tailwindcss"
+    "tailwindcss": "tailwindcss",
+    "css:build": "tailwindcss -i ./src/input.css -o ./public/output.css --watch"
   },
   "dependencies": {
     "@google-cloud/tasks": "^3.1.2",
