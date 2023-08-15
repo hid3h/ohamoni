@@ -1,3 +1,4 @@
+import { DateTimeFormatter, ZonedDateTime } from "@js-joda/core";
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { Account, GettingUp } from "@prisma/client";
@@ -7,7 +8,7 @@ import {
   differenceInMilliseconds,
   startOfDay,
 } from "date-fns";
-import { formatInTimeZone, toDate, utcToZonedTime } from "date-fns-tz";
+import { formatInTimeZone, utcToZonedTime } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 
@@ -79,40 +80,15 @@ export class GettingUpService {
     replyToken: string;
     datetimeInJST: string;
   }) {
-    // console.log("datetimeInJST", datetimeInJST);
-    // const gotUpAtJST = new Date(datetimeInJST);
-    // console.log("gotUpAtJST", gotUpAtJST);
-    // const gotUpAtUTC = parse(datetimeInJST, "yyyy-MM-dd'T'HH:mm", new Date());
-    // console.log("gotUpAtUTC", gotUpAtUTC);
-    // ローカル(タイムゾーン日本)
-    // datetimeInJST 2023-07-06T20:56
-    // gotUpAtJST 2023-07-06T11:56:00.000Z
-    // gotUpAtUTC 2023-07-06T11:56:00.000Z
-
-    // Cloud Run(タイムゾーンUTC)
-    // datetimeInJST 2023-07-06T21:05
-    // gotUpAtJST 2023-07-06T21:05:00.000Z
-    // gotUpAtUTC 2023-07-06T21:05:00.000Z
-    // console.log("toDate1", toDate(datetimeInJST, { timeZone: "Asia/Tokyo" }));
-    // console.log("toDate2", toDate(datetimeInJST, { timeZone: "UTC" }));
-    // console.log("toDate3", toDate(datetimeInJST));
-    // タイムゾーン日本
-    // toDate1 2023-07-06T12:20:00.000Z
-    // toDate2 2023-07-06T21:20:00.000Z
-    // toDate3 2023-07-06T12:20:00.000Z
-
-    // タイムゾーンUTC
-    // toDate1 2023-07-06T12:27:00.000Z
-    // toDate2 2023-07-06T21:27:00.000Z
-    // toDate3 2023-07-06T21:27:00.000Z
-
-    const gotUpAt = toDate(datetimeInJST, { timeZone: "Asia/Tokyo" });
+    const gotUpAtStr = `${datetimeInJST}:00+09:00`;
+    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
+    console.log("gotUpAtZonedDateTime", gotUpAtZonedDateTime);
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
     await this.prismaService.gettingUp.create({
       data: {
-        gotUpAt: gotUpAt,
+        gotUpAt: gotUpAtStr,
         registeredAt: new Date(),
         account: {
           connect: {
@@ -122,9 +98,18 @@ export class GettingUpService {
       },
     });
 
+    const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
+    console.log("weekAgoGotUpAtZonedDateTime", weekAgoGotUpAtZonedDateTime);
+    const weekAgoGotUpAtStr = weekAgoGotUpAtZonedDateTime.format(
+      DateTimeFormatter.ISO_OFFSET_DATE_TIME,
+    );
+    console.log("weekAgoGotUpAtStr", weekAgoGotUpAtStr);
+    const weekAgoGotUpAt = new Date(weekAgoGotUpAtStr);
+    console.log("weekAgoGotUpAt", weekAgoGotUpAt);
+
     const gettingUps = await this.fetchGettingUpsFrom({
       account,
-      fromDate: new Date(add(gotUpAt, { weeks: -1 })),
+      fromDate: weekAgoGotUpAt,
     });
 
     const gettingUpsOrderedByRegisteredAtDesc = gettingUps.sort((a, b) => {
