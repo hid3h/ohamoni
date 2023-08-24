@@ -1,16 +1,21 @@
-import { DateTimeFormatter, ZonedDateTime } from "@js-joda/core";
+import {
+  DateTimeFormatter,
+  Duration,
+  Instant,
+  LocalDateTime,
+  Period,
+  ZoneId,
+  ZoneOffset,
+  ZonedDateTime,
+} from "@js-joda/core";
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
 import { Account, GettingUp } from "@prisma/client";
-import {
-  add,
-  differenceInDays,
-  differenceInMilliseconds,
-  startOfDay,
-} from "date-fns";
-import { formatInTimeZone, utcToZonedTime } from "date-fns-tz";
+import { add, differenceInDays } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
+import "@js-joda/timezone";
 
 @Injectable()
 export class GettingUpService {
@@ -25,29 +30,50 @@ export class GettingUpService {
     });
   }
 
-  async fetchWeekly({ lineUserId }: { lineUserId: string }) {
-    // const labels = ["Red", "Blue", "Yellow", "Green", "Purple", "Orange", "Black"]
-    // const data = {
-    //   labels: labels,
-    //   datasets: [{
-    //     label: 'My First Dataset',
-    //     data: [65, 59, 80, 81, 56, 55, 40],
-    //     fill: false,
-    //     borderColor: 'rgb(75, 192, 192)',
-    //     tension: 0.1
-    //   }]
-    // };
-
+  // 今日から1か月前のデータを取得する
+  async fetchForGraph({ lineUserId }: { lineUserId: string }) {
     const account = await this.accountsService.findOrRegister({
       lineUserId,
     });
 
-    const weekAgoDate = add(new Date(), { weeks: -1 });
-    const fromDate = startOfDay(weekAgoDate);
+    // 日本時間のZoneIdを取得
+    const japanZone = ZoneId.of("Asia/Tokyo");
+
+    // 現在の日本時間を取得
+    const nowInJapan = ZonedDateTime.now(japanZone);
+
+    // 1か月前の日本時間を取得
+    const oneMonthAgoInJapan = nowInJapan.minus(Period.ofMonths(1));
+
+    // その日の始まりの日本時間を取得
+    const startOfOneMonthAgoInJapan = oneMonthAgoInJapan
+      .toLocalDate()
+      .atStartOfDay(japanZone);
+
+    // UTCに変換
+    const oneMonthAgoInUTC = startOfOneMonthAgoInJapan.withZoneSameInstant(
+      ZoneOffset.UTC,
+    );
+
+    // Date型に変換
+    const oneMonthAgoInUTCDate = new Date(
+      oneMonthAgoInUTC.toInstant().toEpochMilli(),
+    );
+
+    console.log(`Now in Japan: ${nowInJapan}`);
+    console.log(`One month ago in Japan: ${oneMonthAgoInJapan}`);
+    console.log(
+      `Start of one month ago in Japan: ${startOfOneMonthAgoInJapan}`,
+    );
+    console.log(`One month ago in UTC: ${oneMonthAgoInUTC}`);
+    console.log(`One month ago in UTC Date: ${oneMonthAgoInUTCDate}`);
+
     const gettingUps = await this.fetchGettingUpsByJSTDay({
       account,
-      fromDate,
+      fromDate: oneMonthAgoInUTCDate,
     });
+
+    console.log("gettingUps", gettingUps);
 
     const labels = Object.keys(gettingUps);
     const data = labels.map((label) => {
@@ -55,11 +81,21 @@ export class GettingUpService {
       if (!gettingUp) {
         return undefined;
       }
-      const jstDate = utcToZonedTime(gettingUp.gotUpAt, "Asia/Tokyo");
-      const startOfJstDate = startOfDay(jstDate);
-      const diffInMs = differenceInMilliseconds(jstDate, startOfJstDate);
+      const gotUpAtDate = gettingUp.gotUpAt;
+      const gotUpAtInstant = Instant.ofEpochMilli(gotUpAtDate.getTime()); // Instant オブジェクトに変換
+      const gotUpAtInJapan = LocalDateTime.ofInstant(gotUpAtInstant, japanZone); // 日本時間に変換
 
-      return diffInMs;
+      const startOfDayInJapan = gotUpAtInJapan
+        .withHour(0)
+        .withMinute(0)
+        .withSecond(0)
+        .withNano(0); // 日本時間でその日の始まり
+
+      console.log("startOfDayInJapan", startOfDayInJapan);
+      console.log("gotUpAtInJapan", gotUpAtInJapan);
+      const duration = Duration.between(startOfDayInJapan, gotUpAtInJapan); // 経過時間を計算
+      // 経過時間をミリ秒で取得して返す
+      return duration.toMillis();
     });
 
     return {

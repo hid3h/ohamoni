@@ -1,8 +1,13 @@
-<script
-  charset="utf-8"
-  src="https://static.line-scdn.net/liff/edge/2/sdk.js"
-></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="/output.css" rel="stylesheet">
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script
+    charset="utf-8"
+    src="https://static.line-scdn.net/liff/edge/2/sdk.js"
+  ></script>
+</head>
 
 <script>
   const LIFF_ID = "{{LIFF_ID}}";
@@ -30,26 +35,15 @@
   };
 
   window.addEventListener("DOMContentLoaded", async () => {
-    console.log("start");
     await initializeLiff();
     const lineIdToken = await liff.getIDToken();
     const query = new URLSearchParams({ lineIdToken });
     const response = await fetch(`/api/getting-ups?${query}`);
     const responseData = await response.json();
-    const ctx = document.getElementById("myChart");
     const labels = responseData.labels;
-    const data = {
-      labels: labels,
-      datasets: [
-        {
-          label: "My First Dataset",
-          data: responseData.data,
-          fill: false,
-          borderColor: "rgb(75, 192, 192)",
-          tension: 0.1,
-        },
-      ],
-    };
+    const data = responseData.data;
+    console.log(labels);
+    console.log(data)
 
     // 小数点以下を切り捨てる関数
     function floorTo(value, base) {
@@ -64,7 +58,7 @@
     // データから最小値と最大値を取得
     let minValue = Infinity;
     let maxValue = -Infinity;
-    responseData.data.forEach((val) => {
+    data.forEach((val) => {
       if (val !== null && val !== undefined) {
         if (val < minValue) minValue = val;
         if (val > maxValue) maxValue = val;
@@ -83,74 +77,50 @@
     minValue = floorTo(minValue, 1800000);
     maxValue = ceilTo(maxValue, 1800000);
 
-    new Chart(ctx, {
-      type: "line",
-      data,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            ticks: {
-              font: {
-                size: 36,
-              },
-            },
-          },
-          y: {
-            min: minValue, // 最小値を設定
-            max: maxValue, // 最大値を設定
-            ticks: {
-              // Include a dollar sign in the ticks
-              callback: function (value, index, values) {
-                if (value % 1800000 === 0) {
-                  // 30分単位の刻みにする
-                  return msToTime(value);
-                } else {
-                  return "";
-                }
-              },
-              stepSize: 1800000, // Y軸の刻みを30分単位に設定
-              font: {
-                size: 36,
-              },
-            },
-          },
+    Highcharts.chart("container", {
+        chart: {
+          type: "line",
+          scrollablePlotArea: {
+            minWidth: labels.length * 50,  // 100は1データ点あたりの幅。調整が必要な場合はこの値を変更してください。
+            scrollPositionX: 1
+          }
         },
-        elements: {
-          point: {
-            radius: 10,
-            hitRadius: 40,
-          },
+        title: {
+          text: null
         },
-        plugins: {
-          legend: {
-            display: false, // レジェンドを非表示にする
-          },
-          tooltip: {
-            callbacks: {
-              label: function (context) {
-                let label = "";
-                if (context.parsed.y !== null) {
-                  label +=
-                    new Date(context.parsed.y)
-                      .toISOString()
-                      .substr(11, 5);
-                }
-                return label;
-              },
-            },
-            bodyFont: {
-              size: 36,
-            },
-            padding: 20,
-          },
+        xAxis: {
+          categories: labels,
         },
-      },
-    });
+        yAxis: {
+          min: minValue,
+          max: maxValue,
+          tickInterval: 1800000,
+          title: {
+            text: null
+          },
+          labels: {
+            formatter: function() {
+              return msToTime(this.value);
+            }
+          }
+        },
+        series: [{
+          name: null,
+          data,
+          color: 'rgb(75, 192, 192)'
+        }],
+        tooltip: {
+          formatter: function() {
+            const pointTime = msToTime(this.y);
+            return `<b>${this.x}</b><br>${pointTime}`;
+          }
+        },
+        legend: {
+          enabled: false
+        },
+      });
   });
 </script>
 
-<div style="height: 100%; width: 100%">
-  <canvas id="myChart"></canvas>
+<div class="h-screen" id="container">
 </div>
