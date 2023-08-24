@@ -73,8 +73,6 @@ export class GettingUpService {
       fromDate: oneMonthAgoInUTCDate,
     });
 
-    console.log("gettingUps", gettingUps);
-
     const labels = Object.keys(gettingUps);
     const data = labels.map((label) => {
       const gettingUp = gettingUps[label];
@@ -91,8 +89,6 @@ export class GettingUpService {
         .withSecond(0)
         .withNano(0); // 日本時間でその日の始まり
 
-      console.log("startOfDayInJapan", startOfDayInJapan);
-      console.log("gotUpAtInJapan", gotUpAtInJapan);
       const duration = Duration.between(startOfDayInJapan, gotUpAtInJapan); // 経過時間を計算
       // 経過時間をミリ秒で取得して返す
       return duration.toMillis();

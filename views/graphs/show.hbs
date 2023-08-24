@@ -42,8 +42,6 @@
     const responseData = await response.json();
     const labels = responseData.labels;
     const data = responseData.data;
-    console.log(labels);
-    console.log(data)
 
     // 小数点以下を切り捨てる関数
     function floorTo(value, base) {
