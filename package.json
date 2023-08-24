@@ -23,6 +23,7 @@
     "prisma:migrate:dev": "prisma migrate dev",
     "tailwindcss": "tailwindcss",
     "build:css:dev": "tailwindcss -i ./src/input.css -o ./public/output.css --watch",
+    "build:css": "tailwindcss -i ./src/input.css -o ./public/output.css",
     "dev": "run-p start:debug build:css:dev"
   },
   "dependencies": {

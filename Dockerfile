@@ -11,6 +11,7 @@ COPY . /app
 RUN yarn --immutable
 RUN yarn prisma:generate
 RUN yarn build
+RUN yarn build:css
 
 
 FROM node:18-alpine AS runner
@@ -21,6 +22,7 @@ ENV LANG ja_JP.UTF-8
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma ./public
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/yarn.lock ./yarn.lock
 
