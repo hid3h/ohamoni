@@ -30,7 +30,7 @@ export class GettingUpController {
     const result = await axios.post(url, data, { headers });
     const lineUserId = result.data.sub;
 
-    const graphData = await this.gettingUpService.fetchWeekly({ lineUserId });
+    const graphData = await this.gettingUpService.fetchForGraph({ lineUserId });
 
     return graphData;
   }
