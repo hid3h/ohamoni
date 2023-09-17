@@ -29,6 +29,7 @@
   "dependencies": {
     "@google-cloud/tasks": "^3.1.2",
     "@js-joda/core": "^5.5.3",
+    "@js-joda/locale": "^4.8.10",
     "@js-joda/timezone": "^2.18.0",
     "@line/bot-sdk": "^7.5.2",
     "@nestjs/common": "^10.0.0",
@@ -36,6 +37,8 @@
     "@nestjs/core": "^10.0.0",
     "@nestjs/platform-express": "^10.0.0",
     "@prisma/client": "^4.16.1",
+    "cldr-data": "^36.0.1",
+    "cldrjs": "^0.5.5",
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "hbs": "^4.2.0",

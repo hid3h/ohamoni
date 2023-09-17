@@ -65,6 +65,7 @@ export class LinebotService {
     } else if (event.type === "postback") {
       const postback = event.postback;
       if (postback.data === this.gotUpActionData) {
+        // ユーザーが起床時間を選択した時に実行される分岐
         // Property 'datetime' does not exist on type 'DateTimePostback | RichMenuSwitchPostback'.
         // Property 'datetime' does not exist on type 'RichMenuSwitchPostback'ねえ
         // const datetimeInJST = params.datetime;

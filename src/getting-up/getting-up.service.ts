@@ -16,6 +16,7 @@ import { formatInTimeZone } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import "@js-joda/timezone";
+import { Locale } from "@js-joda/locale";
 
 @Injectable()
 export class GettingUpService {
@@ -113,8 +114,6 @@ export class GettingUpService {
     datetimeInJST: string;
   }) {
     const gotUpAtStr = `${datetimeInJST}:00+09:00`;
-    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
-    console.log("gotUpAtZonedDateTime", gotUpAtZonedDateTime);
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
@@ -129,6 +128,39 @@ export class GettingUpService {
         },
       },
     });
+
+    const text = await this.buildGettingUpReplyText({
+      account,
+      gotUpAtStr,
+    });
+
+    await this.linebotClient.replyMessage(replyToken, {
+      type: "text",
+      text,
+    });
+  }
+
+  private async buildGettingUpReplyText({
+    account,
+    gotUpAtStr,
+  }: {
+    account: Account;
+    gotUpAtStr: string;
+  }) {
+    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
+
+    let text = "記録しました！";
+
+    const formatterDate = DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(
+      Locale.US,
+    );
+    let formattedDate = formatterDate.format(gotUpAtZonedDateTime);
+    formattedDate = this.replaceDayOfWeekWithJapanese(formattedDate);
+
+    const formatterTime = DateTimeFormatter.ofPattern("HH:mm");
+    const formattedTime = formatterTime.format(gotUpAtZonedDateTime);
+
+    text = text + `\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`;
 
     const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
     console.log("weekAgoGotUpAtZonedDateTime", weekAgoGotUpAtZonedDateTime);
@@ -183,12 +215,12 @@ export class GettingUpService {
       }`;
     });
 
-    await this.linebotClient.replyMessage(replyToken, {
-      type: "text",
-      text:
-        "記録しました！\n直近一週間の記録です\n\n" +
-        gettingUpRecordMessages.join("\n"),
-    });
+    text =
+      text +
+      "\n\n過去1週間の記録はこちらです\n" +
+      gettingUpRecordMessages.join("\n");
+
+    return text;
   }
 
   private async fetchGettingUpsByJSTDay({
