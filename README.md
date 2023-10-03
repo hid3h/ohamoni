@@ -4,5 +4,5 @@ LINEからのリクエストを受け取るのにhttps urlが必要
 ngrokでやってる
 
 ```
-ngrok http 8080
+ngrok http --domain=hogehoge.ngrok-free.app 8080
 ```
