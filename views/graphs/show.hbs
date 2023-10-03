@@ -19,14 +19,12 @@
     }
   }
 
-  // 0時からのミリ秒を時間:分に変換する関数
-  const msToTime = function (s) {
+  // 0時からの秒を時間:分に変換する関数
+  const secToTime = function (s) {
     const pad = function (n, z) {
       z = z || 2;
       return ("00" + n).slice(-z);
     };
-    const ms = s % 1000;
-    s = (s - ms) / 1000;
     const secs = s % 60;
     s = (s - secs) / 60;
     const mins = s % 60;
@@ -64,16 +62,16 @@
     });
 
     // データが存在しない場合のデフォルト値を設定
-    if (minValue === Infinity) minValue = 6 * 3600000; // 6:00
-    if (maxValue === -Infinity) maxValue = 9 * 3600000; // 9:00
+    if (minValue === Infinity) minValue = 6 * 3600; // 6:00
+    if (maxValue === -Infinity) maxValue = 9 * 3600; // 9:00
 
     // y軸のminを1時間前、maxを1時間後に設定
-    minValue = minValue - 3600000;
-    maxValue = maxValue + 3600000;
+    minValue = minValue - 3600;
+    maxValue = maxValue + 3600;
 
     // 切りの良い値に調整
-    minValue = floorTo(minValue, 1800000);
-    maxValue = ceilTo(maxValue, 1800000);
+    minValue = floorTo(minValue, 1800);
+    maxValue = ceilTo(maxValue, 1800);
 
     Highcharts.chart("container", {
         chart: {
@@ -92,13 +90,13 @@
         yAxis: {
           min: minValue,
           max: maxValue,
-          tickInterval: 1800000,
+          tickInterval: 1800,
           title: {
             text: null
           },
           labels: {
             formatter: function() {
-              return msToTime(this.value);
+              return secToTime(this.value);
             }
           }
         },
@@ -109,7 +107,7 @@
         }],
         tooltip: {
           formatter: function() {
-            const pointTime = msToTime(this.y);
+            const pointTime = secToTime(this.y);
             return `<b>${this.x}</b><br>${pointTime}`;
           }
         },
