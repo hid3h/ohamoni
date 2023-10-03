@@ -10,7 +10,7 @@ import {
 } from "@js-joda/core";
 import { Client } from "@line/bot-sdk";
 import { Injectable } from "@nestjs/common";
-import { Account, GettingUp } from "@prisma/client";
+import { Account } from "@prisma/client";
 import { add, differenceInDays } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { AccountsService } from "src/accounts/accounts.service";
@@ -167,10 +167,9 @@ export class GettingUpService {
     account: Account;
     gotUpAtStr: string;
   }) {
-    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
-
     let text = "記録しました！";
 
+    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
     const formatterDate = DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(
       Locale.US,
     );
@@ -180,58 +179,49 @@ export class GettingUpService {
     const formattedTime = formatterTime.format(gotUpAtZonedDateTime);
     text = text + `\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`;
 
-    const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
-    console.log("weekAgoGotUpAtZonedDateTime", weekAgoGotUpAtZonedDateTime);
-    const weekAgoGotUpAtStr = weekAgoGotUpAtZonedDateTime.format(
-      DateTimeFormatter.ISO_OFFSET_DATE_TIME,
-    );
-    console.log("weekAgoGotUpAtStr", weekAgoGotUpAtStr);
-    const weekAgoGotUpAt = new Date(weekAgoGotUpAtStr);
-    console.log("weekAgoGotUpAt", weekAgoGotUpAt);
-
-    const gettingUps = await this.fetchGettingUpsFrom({
-      account,
-      fromDate: weekAgoGotUpAt,
-    });
-
-    const gettingUpsOrderedByRegisteredAtDesc = gettingUps.sort((a, b) => {
-      return b.registeredAt.getTime() - a.registeredAt.getTime();
-    });
-
-    const gettingUpMapByJSTDayISOString: Map<string, GettingUp | undefined> =
-      new Map();
-    for (let i = 0; i < 7; i++) {
-      const targetDateUTC = add(new Date(), { days: -i });
-      const targetDayJSTISOString = formatInTimeZone(
-        targetDateUTC,
-        "Asia/Tokyo",
-        "MM/dd(E)",
-      );
-      const gettingUp = gettingUpsOrderedByRegisteredAtDesc.find(
-        (gettingUp) => {
-          return (
-            targetDayJSTISOString ===
-            formatInTimeZone(gettingUp.gotUpAt, "Asia/Tokyo", "MM/dd(E)")
-          );
-        },
-      );
-
-      if (gettingUp && !gettingUp.gettingUpDeletion) {
-        gettingUpMapByJSTDayISOString[targetDayJSTISOString] = gettingUp;
-      } else {
-        gettingUpMapByJSTDayISOString[targetDayJSTISOString] = undefined;
-      }
+    // 記録日時が今日じゃなかったら過去分を返す必要はない
+    const nowZonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
+    if (
+      !nowZonedDateTime.toLocalDate().equals(gotUpAtZonedDateTime.toLocalDate())
+    ) {
+      return text;
     }
 
-    const sortedKeys = Object.keys(gettingUpMapByJSTDayISOString);
-    const gettingUpRecordMessages = sortedKeys.map((key) => {
-      const gettingUp = gettingUpMapByJSTDayISOString[key];
-      return `${this.replaceDayOfWeekWithJapanese(key)} ${
-        gettingUp
-          ? formatInTimeZone(gettingUp.gotUpAt, "Asia/Tokyo", "HH:mm")
-          : "なし"
-      }`;
+    const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
+    const weekAgoJstDate = weekAgoGotUpAtZonedDateTime.format(
+      DateTimeFormatter.ISO_LOCAL_DATE,
+    );
+    const gettingUps = await this.prismaService.gettingUpDailySummary.findMany({
+      where: {
+        accountId: account.id,
+        jstDate: {
+          gte: weekAgoJstDate,
+        },
+      },
+      orderBy: {
+        jstDate: "desc",
+      },
     });
+
+    const gettingUpRecordMessages = [];
+    for (let i = 0; i < 7; i++) {
+      const targetZonedDatetime = nowZonedDateTime.minusDays(i);
+      const targetJstDate = targetZonedDatetime.format(
+        DateTimeFormatter.ISO_LOCAL_DATE,
+      );
+      const targetGettingUp = gettingUps.find((gettingUp) => {
+        return gettingUp.jstDate === targetJstDate;
+      });
+      const gettingUpDateForMessage = targetZonedDatetime.format(
+        DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(Locale.JAPAN),
+      );
+      const gettingUpTimeForMessage = targetGettingUp
+        ? targetGettingUp.jstTime
+        : "なし";
+      const gettingUpDateTimeForMessage =
+        gettingUpDateForMessage + " " + gettingUpTimeForMessage;
+      gettingUpRecordMessages.push(gettingUpDateTimeForMessage);
+    }
 
     text =
       text +
@@ -315,27 +305,6 @@ export class GettingUpService {
     }
 
     return gettingUpMapByJSTDay;
-  }
-
-  private async fetchGettingUpsFrom({
-    account,
-    fromDate,
-  }: {
-    account: Pick<Account, "id">;
-    fromDate: Date;
-  }) {
-    const accountId = account.id;
-    return await this.prismaService.gettingUp.findMany({
-      where: {
-        accountId,
-        gotUpAt: {
-          gte: fromDate,
-        },
-      },
-      include: {
-        gettingUpDeletion: true,
-      },
-    });
   }
 
   private replaceDayOfWeekWithJapanese(str) {
