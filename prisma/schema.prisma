@@ -19,6 +19,7 @@ model Account {
   gettingUps GettingUp[]
   reminderNotificationSettings ReminderNotificationSetting[]
   reminderNotificationSettingCancellations ReminderNotificationSettingCancellation[]
+  gettingUpDailySummaries GettingUpDailySummary[]
 
   @@map("accounts")
 }
@@ -66,4 +67,18 @@ model ReminderNotificationSettingCancellation {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("reminder_notification_setting_cancellations")
+}
+
+model GettingUpDailySummary {
+  id String @id @default(cuid())
+  account Account @relation(fields: [accountId], references: [id])
+  accountId String @map("account_id")
+  // DatetimeにするとDBに入れる時に勝手にUTCになったり、account, jstDateのupsertがユニークエラーになったりするのでStringにしている
+  jstDate String @map("jst_date")
+  jstTime String @map("jst_time")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([accountId, jstDate])
+  @@map("getting_up_daily_summaries")
 }
