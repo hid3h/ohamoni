@@ -34,4 +34,11 @@ export class GettingUpController {
 
     return graphData;
   }
+
+  @Get("/reflect")
+  async reflect() {
+    console.log("reflect start");
+    await this.gettingUpService.reflect();
+    console.log("reflect end");
+  }
 }
