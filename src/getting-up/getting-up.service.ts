@@ -31,44 +31,6 @@ export class GettingUpService {
     });
   }
 
-  // getting_upsをgetting_up_daily_summariesに反映する
-  async reflect() {
-    const gettingUps = await this.prismaService.gettingUp.findMany({
-      orderBy: {
-        registeredAt: "asc",
-      },
-    });
-    for (const gettingUp of gettingUps) {
-      const gotUpAtDate = gettingUp.gotUpAt;
-      const gotUpAtInstant = Instant.ofEpochMilli(gotUpAtDate.getTime()); // Instant オブジェクトに変換
-      const gotUpAtZonedDateTime = LocalDateTime.ofInstant(
-        gotUpAtInstant,
-        ZoneId.of("Asia/Tokyo"),
-      );
-      const jstDate = gotUpAtZonedDateTime.format(
-        DateTimeFormatter.ofPattern("yyyy-MM-dd"),
-      );
-      const jstTime = gotUpAtZonedDateTime.format(
-        DateTimeFormatter.ofPattern("HH:mm"),
-      );
-      await this.prismaService.gettingUpDailySummary.upsert({
-        where: {
-          accountId_jstDate: { accountId: gettingUp.accountId, jstDate },
-        },
-        update: { jstTime },
-        create: {
-          jstDate,
-          jstTime,
-          account: {
-            connect: {
-              id: gettingUp.accountId,
-            },
-          },
-        },
-      });
-    }
-  }
-
   // 今日から1か月前のデータを取得する
   async fetchForGraph({ lineUserId }: { lineUserId: string }) {
     const account = await this.accountsService.findOrRegister({
