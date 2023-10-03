@@ -73,7 +73,7 @@ model GettingUpDailySummary {
   id String @id @default(cuid())
   account Account @relation(fields: [accountId], references: [id])
   accountId String @map("account_id")
-  // DatetimeにするとDBに入れる時に勝手にUTCになったり、account, jstDateのupsertがユニークエラーになったりするのでStringにしている
+  // DatetimeにするとDBに入れる時に勝手にUTCになったり、扱いにくいのでstirngにしている
   jstDate String @map("jst_date")
   jstTime String @map("jst_time")
   createdAt DateTime @default(now()) @map("created_at")
