@@ -117,16 +117,36 @@ export class GettingUpService {
 
     const account = await this.accountsService.findOrRegister({ lineUserId });
 
-    await this.prismaService.gettingUp.create({
-      data: {
-        gotUpAt: gotUpAtStr,
-        registeredAt: new Date(),
-        account: {
-          connect: {
-            id: account.id,
+    await this.prismaService.$transaction(async (tx) => {
+      await tx.gettingUp.create({
+        data: {
+          gotUpAt: gotUpAtStr,
+          registeredAt: new Date(),
+          account: {
+            connect: {
+              id: account.id,
+            },
           },
         },
-      },
+      });
+
+      const jstDate = datetimeInJST.slice(0, 10);
+      const jstTime = datetimeInJST.slice(11, 16);
+      await tx.gettingUpDailySummary.upsert({
+        where: {
+          accountId_jstDate: { accountId: account.id, jstDate },
+        },
+        update: { jstTime },
+        create: {
+          jstDate,
+          jstTime,
+          account: {
+            connect: {
+              id: account.id,
+            },
+          },
+        },
+      });
     });
 
     const text = await this.buildGettingUpReplyText({
@@ -156,10 +176,8 @@ export class GettingUpService {
     );
     let formattedDate = formatterDate.format(gotUpAtZonedDateTime);
     formattedDate = this.replaceDayOfWeekWithJapanese(formattedDate);
-
     const formatterTime = DateTimeFormatter.ofPattern("HH:mm");
     const formattedTime = formatterTime.format(gotUpAtZonedDateTime);
-
     text = text + `\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`;
 
     const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
