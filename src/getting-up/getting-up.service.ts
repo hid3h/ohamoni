@@ -38,24 +38,35 @@ export class GettingUpService {
         registeredAt: "asc",
       },
     });
-    gettingUps.forEach(async (gettingUp) => {
-      console.log("gettingUp", gettingUp.id, gettingUp.gotUpAt.toString());
+    for (const gettingUp of gettingUps) {
       const gotUpAtDate = gettingUp.gotUpAt;
       const gotUpAtInstant = Instant.ofEpochMilli(gotUpAtDate.getTime()); // Instant オブジェクトに変換
       const gotUpAtZonedDateTime = LocalDateTime.ofInstant(
         gotUpAtInstant,
         ZoneId.of("Asia/Tokyo"),
       );
-      console.log("gotUpAtZonedDateTime", gotUpAtZonedDateTime);
       const jstDate = gotUpAtZonedDateTime.format(
         DateTimeFormatter.ofPattern("yyyy-MM-dd"),
       );
       const jstTime = gotUpAtZonedDateTime.format(
         DateTimeFormatter.ofPattern("HH:mm"),
       );
-      console.log("jstDate", jstDate);
-      console.log("jstTime", jstTime);
-    });
+      await this.prismaService.gettingUpDailySummary.upsert({
+        where: {
+          accountId_jstDate: { accountId: gettingUp.accountId, jstDate },
+        },
+        update: { jstTime },
+        create: {
+          jstDate,
+          jstTime,
+          account: {
+            connect: {
+              id: gettingUp.accountId,
+            },
+          },
+        },
+      });
+    }
   }
 
   // 今日から1か月前のデータを取得する
