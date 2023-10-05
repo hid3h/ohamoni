@@ -13,10 +13,12 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import "@js-joda/timezone";
 import { Locale } from "@js-joda/locale";
+import OpenAI from "openai";
 
 @Injectable()
 export class GettingUpService {
   private readonly linebotClient: Client;
+  private readonly openai: OpenAI;
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -24,6 +26,9 @@ export class GettingUpService {
   ) {
     this.linebotClient = new Client({
       channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+    });
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
   }
 
@@ -156,7 +161,7 @@ export class GettingUpService {
     const formattedTime = gotUpAtZonedDateTime.format(
       DateTimeFormatter.ofPattern("HH:mm"),
     );
-    text = text + `\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`;
+    text = text + `\n\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`;
 
     // 記録日時が今日じゃなかったら過去分を返す必要はない
     const nowZonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
@@ -170,17 +175,18 @@ export class GettingUpService {
     const weekAgoJstDate = weekAgoGotUpAtZonedDateTime.format(
       DateTimeFormatter.ISO_LOCAL_DATE,
     );
-    const gettingUps = await this.prismaService.gettingUpDailySummary.findMany({
-      where: {
-        accountId: account.id,
-        jstDate: {
-          gte: weekAgoJstDate,
+    const gettingUpsFromWeekAgo =
+      await this.prismaService.gettingUpDailySummary.findMany({
+        where: {
+          accountId: account.id,
+          jstDate: {
+            gte: weekAgoJstDate,
+          },
         },
-      },
-      orderBy: {
-        jstDate: "desc",
-      },
-    });
+        orderBy: {
+          jstDate: "desc",
+        },
+      });
 
     const gettingUpRecordMessages = [];
     for (let i = 0; i < 7; i++) {
@@ -188,7 +194,7 @@ export class GettingUpService {
       const targetJstDate = targetZonedDatetime.format(
         DateTimeFormatter.ISO_LOCAL_DATE,
       );
-      const targetGettingUp = gettingUps.find((gettingUp) => {
+      const targetGettingUp = gettingUpsFromWeekAgo.find((gettingUp) => {
         return gettingUp.jstDate === targetJstDate;
       });
       const gettingUpDateForMessage = targetZonedDatetime.format(

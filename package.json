@@ -42,6 +42,7 @@
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",
     "hbs": "^4.2.0",
+    "openai": "^4.11.1",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.1"
   },
