@@ -13,10 +13,12 @@ import { AccountsService } from "src/accounts/accounts.service";
 import { PrismaService } from "src/prisma/prisma.service";
 import "@js-joda/timezone";
 import { Locale } from "@js-joda/locale";
+import OpenAI from "openai";
 
 @Injectable()
 export class GettingUpService {
   private readonly linebotClient: Client;
+  private readonly openai: OpenAI;
 
   constructor(
     private readonly prismaService: PrismaService,
@@ -24,6 +26,9 @@ export class GettingUpService {
   ) {
     this.linebotClient = new Client({
       channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN,
+    });
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
     });
   }
 
@@ -130,57 +135,53 @@ export class GettingUpService {
     });
 
     const text = await this.buildGettingUpReplyText({
-      account,
       gotUpAtStr,
     });
 
+    // ユーザーに返信をなる早で一旦返したいので、ここで返信しておく
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
       text,
     });
+
+    await this.pushAdditionalMessage({
+      gotUpAtStr,
+      account,
+    });
   }
 
-  private async buildGettingUpReplyText({
-    account,
+  private async pushAdditionalMessage({
     gotUpAtStr,
+    account,
   }: {
-    account: Account;
     gotUpAtStr: string;
+    account: Account;
   }) {
-    let text = "記録しました！";
-
-    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
-    const formattedDate = gotUpAtZonedDateTime.format(
-      DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(Locale.JAPAN),
-    );
-    const formattedTime = gotUpAtZonedDateTime.format(
-      DateTimeFormatter.ofPattern("HH:mm"),
-    );
-    text = text + `\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`;
-
     // 記録日時が今日じゃなかったら過去分を返す必要はない
     const nowZonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
+    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
     if (
       !nowZonedDateTime.toLocalDate().equals(gotUpAtZonedDateTime.toLocalDate())
     ) {
-      return text;
+      return;
     }
 
     const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
     const weekAgoJstDate = weekAgoGotUpAtZonedDateTime.format(
       DateTimeFormatter.ISO_LOCAL_DATE,
     );
-    const gettingUps = await this.prismaService.gettingUpDailySummary.findMany({
-      where: {
-        accountId: account.id,
-        jstDate: {
-          gte: weekAgoJstDate,
+    const gettingUpsFromWeekAgo =
+      await this.prismaService.gettingUpDailySummary.findMany({
+        where: {
+          accountId: account.id,
+          jstDate: {
+            gte: weekAgoJstDate,
+          },
         },
-      },
-      orderBy: {
-        jstDate: "desc",
-      },
-    });
+        orderBy: {
+          jstDate: "desc",
+        },
+      });
 
     const gettingUpRecordMessages = [];
     for (let i = 0; i < 7; i++) {
@@ -188,7 +189,7 @@ export class GettingUpService {
       const targetJstDate = targetZonedDatetime.format(
         DateTimeFormatter.ISO_LOCAL_DATE,
       );
-      const targetGettingUp = gettingUps.find((gettingUp) => {
+      const targetGettingUp = gettingUpsFromWeekAgo.find((gettingUp) => {
         return gettingUp.jstDate === targetJstDate;
       });
       const gettingUpDateForMessage = targetZonedDatetime.format(
@@ -202,11 +203,76 @@ export class GettingUpService {
       gettingUpRecordMessages.push(gettingUpDateTimeForMessage);
     }
 
-    text =
-      text +
-      "\n\n過去1週間の記録はこちらです\n" +
-      gettingUpRecordMessages.join("\n");
+    const lineUserId = account.lineUserId;
 
-    return text;
+    // openaiのAPIを叩く
+    let result;
+    try {
+      const prompt = `あなたは起床時間記録アプリです。早起きしたい人や目標の起床時間に近づけたい人が使うアプリです。\n
+      ユーザーが本日の起床時間を記録したので、その記録を分析して、ユーザーにアドバイスを投げかけてください。\n
+      直近一週間の記録は以下です。\n\n
+      ${gettingUpRecordMessages.join("\n")}\n
+
+      以下に従ってください。\n
+      - 70字程度
+      - 記録が少ない場合は記録し始めの場合があるのでアプリを使ってくれていることに感謝の気持ちを伝えてください
+      - 今日を除く記録が２つ以上ある場合は前日までの平均起床時間を算出して、本日の起床時間と比較・分析してください
+      `;
+      console.log("openai.chat.completions prompt", prompt);
+      result = await this.openai.chat.completions.create({
+        messages: [
+          {
+            role: "system",
+            content: prompt,
+          },
+        ],
+        model: "gpt-4",
+      });
+      console.log("openai.chat.completions result", result);
+      console.log(
+        "openai.chat.completions result.choices[0].message",
+        result.choices[0].message,
+      );
+    } catch (e) {
+      console.error(
+        `error openai.chat.completions.create. lineUserId: ${lineUserId}`,
+        e,
+      );
+      return;
+    }
+    const openaiMessageContent = result.choices[0].message.content;
+    const text = `直近1週間の起床時間の記録です\n
+${gettingUpRecordMessages.join("\n")}\n
+${openaiMessageContent}`;
+
+    try {
+      await this.linebotClient.pushMessage(lineUserId, {
+        type: "text",
+        text,
+      });
+    } catch (e) {
+      console.error(
+        `failed to push additional message. lieUserId: ${lineUserId}`,
+        e,
+      );
+    }
+  }
+
+  private async buildGettingUpReplyText({
+    gotUpAtStr,
+  }: {
+    gotUpAtStr: string;
+  }) {
+    const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
+    const formattedDate = gotUpAtZonedDateTime.format(
+      DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(Locale.JAPAN),
+    );
+    const formattedTime = gotUpAtZonedDateTime.format(
+      DateTimeFormatter.ofPattern("HH:mm"),
+    );
+    return (
+      "記録しました！" +
+      `\n\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`
+    );
   }
 }
