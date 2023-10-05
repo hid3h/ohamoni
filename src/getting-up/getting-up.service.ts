@@ -135,10 +135,10 @@ export class GettingUpService {
     });
 
     const text = await this.buildGettingUpReplyText({
-      account,
       gotUpAtStr,
     });
 
+    // ユーザーに返信をなる早で一旦返したいので、ここで返信しておく
     await this.linebotClient.replyMessage(replyToken, {
       type: "text",
       text,
@@ -146,14 +146,10 @@ export class GettingUpService {
   }
 
   private async buildGettingUpReplyText({
-    account,
     gotUpAtStr,
   }: {
-    account: Account;
     gotUpAtStr: string;
   }) {
-    let text = "記録しました！";
-
     const gotUpAtZonedDateTime = ZonedDateTime.parse(gotUpAtStr);
     const formattedDate = gotUpAtZonedDateTime.format(
       DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(Locale.JAPAN),
@@ -161,58 +157,61 @@ export class GettingUpService {
     const formattedTime = gotUpAtZonedDateTime.format(
       DateTimeFormatter.ofPattern("HH:mm"),
     );
-    text = text + `\n\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`;
-
-    // 記録日時が今日じゃなかったら過去分を返す必要はない
-    const nowZonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
-    if (
-      !nowZonedDateTime.toLocalDate().equals(gotUpAtZonedDateTime.toLocalDate())
-    ) {
-      return text;
-    }
-
-    const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
-    const weekAgoJstDate = weekAgoGotUpAtZonedDateTime.format(
-      DateTimeFormatter.ISO_LOCAL_DATE,
+    return (
+      "記録しました！" +
+      `\n\n${formattedDate}の起床時間は\n✨${formattedTime}⏱\nです`
     );
-    const gettingUpsFromWeekAgo =
-      await this.prismaService.gettingUpDailySummary.findMany({
-        where: {
-          accountId: account.id,
-          jstDate: {
-            gte: weekAgoJstDate,
-          },
-        },
-        orderBy: {
-          jstDate: "desc",
-        },
-      });
 
-    const gettingUpRecordMessages = [];
-    for (let i = 0; i < 7; i++) {
-      const targetZonedDatetime = nowZonedDateTime.minusDays(i);
-      const targetJstDate = targetZonedDatetime.format(
-        DateTimeFormatter.ISO_LOCAL_DATE,
-      );
-      const targetGettingUp = gettingUpsFromWeekAgo.find((gettingUp) => {
-        return gettingUp.jstDate === targetJstDate;
-      });
-      const gettingUpDateForMessage = targetZonedDatetime.format(
-        DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(Locale.JAPAN),
-      );
-      const gettingUpTimeForMessage = targetGettingUp
-        ? targetGettingUp.jstTime
-        : "なし";
-      const gettingUpDateTimeForMessage =
-        gettingUpDateForMessage + " " + gettingUpTimeForMessage;
-      gettingUpRecordMessages.push(gettingUpDateTimeForMessage);
-    }
+    // // 記録日時が今日じゃなかったら過去分を返す必要はない
+    // const nowZonedDateTime = ZonedDateTime.now(ZoneId.of("Asia/Tokyo"));
+    // if (
+    //   !nowZonedDateTime.toLocalDate().equals(gotUpAtZonedDateTime.toLocalDate())
+    // ) {
+    //   return text;
+    // }
 
-    text =
-      text +
-      "\n\n過去1週間の記録はこちらです\n" +
-      gettingUpRecordMessages.join("\n");
+    // const weekAgoGotUpAtZonedDateTime = gotUpAtZonedDateTime.minusWeeks(1);
+    // const weekAgoJstDate = weekAgoGotUpAtZonedDateTime.format(
+    //   DateTimeFormatter.ISO_LOCAL_DATE,
+    // );
+    // const gettingUpsFromWeekAgo =
+    //   await this.prismaService.gettingUpDailySummary.findMany({
+    //     where: {
+    //       accountId: account.id,
+    //       jstDate: {
+    //         gte: weekAgoJstDate,
+    //       },
+    //     },
+    //     orderBy: {
+    //       jstDate: "desc",
+    //     },
+    //   });
 
-    return text;
+    // const gettingUpRecordMessages = [];
+    // for (let i = 0; i < 7; i++) {
+    //   const targetZonedDatetime = nowZonedDateTime.minusDays(i);
+    //   const targetJstDate = targetZonedDatetime.format(
+    //     DateTimeFormatter.ISO_LOCAL_DATE,
+    //   );
+    //   const targetGettingUp = gettingUpsFromWeekAgo.find((gettingUp) => {
+    //     return gettingUp.jstDate === targetJstDate;
+    //   });
+    //   const gettingUpDateForMessage = targetZonedDatetime.format(
+    //     DateTimeFormatter.ofPattern("MM/dd(E)").withLocale(Locale.JAPAN),
+    //   );
+    //   const gettingUpTimeForMessage = targetGettingUp
+    //     ? targetGettingUp.jstTime
+    //     : "なし";
+    //   const gettingUpDateTimeForMessage =
+    //     gettingUpDateForMessage + " " + gettingUpTimeForMessage;
+    //   gettingUpRecordMessages.push(gettingUpDateTimeForMessage);
+    // }
+
+    // text =
+    //   text +
+    //   "\n\n過去1週間の記録はこちらです\n" +
+    //   gettingUpRecordMessages.join("\n");
+
+    // return text;
   }
 }
