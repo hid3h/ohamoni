@@ -10,6 +10,7 @@ generator client {
 //   url      = env("DATABASE_URL")
 // }
 
+
 model Account {
   id String @id @default(cuid())
   lineUserId String @unique @map("line_user_id")
