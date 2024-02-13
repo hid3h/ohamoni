@@ -9,7 +9,10 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY . /app
 RUN yarn --immutable
+RUN cat /app/node_modules/.prisma/client/schema.prisma
 RUN yarn prisma:generate
+RUN cat /app/node_modules/.prisma/client/schema.prisma
+
 RUN yarn build
 RUN yarn build:css
 
@@ -31,6 +34,7 @@ COPY --from=builder /app/views ./views
 RUN yarn --immutable --production
 
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+RUN cat ./node_modules/.prisma/client/schema.prisma
 
 EXPOSE 8080
 ENV PORT 8080
