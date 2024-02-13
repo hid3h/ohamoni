@@ -1,15 +1,14 @@
 version: '3'
 services:
   db:
-    image: mysql:8.0 # 2023/06/30 GCPで8系が最新で8.0だったので
+    image: postgres:15-alpine # 2023/10/31 GCPで15が最新だったので
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      POSTGRES_PASSWORD: password
     ports:
-      - 3332:3306
+      - 5332:5432
     volumes:
-      - ./mysql8/mysql_data:/var/lib/mysql # データの永続化 ホストのディレクトリ:コンテナ内のディレクトリで中身が同期される
-      - ./mysql8/conf.d:/etc/mysql/conf.d
+      - ./.postgres15/postgres_data:/var/lib/postgresql/data
   gcloud-tasks-emulator:
     image: ghcr.io/aertje/cloud-tasks-emulator:latest
     command: >
