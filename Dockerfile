@@ -9,7 +9,8 @@ ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY . /app
 RUN yarn --immutable
-RUN yarn prisma:generate
+# RUN yarn prisma:generate
+RUN npx prisma generate
 
 RUN yarn build
 RUN yarn build:css
