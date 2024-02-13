@@ -70,7 +70,3 @@ model GettingUpDailySummary {
   @@unique([accountId, jstDate])
   @@map("getting_up_daily_summaries")
 }
-
-model Temp {
-  id String @id @default(cuid())
-}
