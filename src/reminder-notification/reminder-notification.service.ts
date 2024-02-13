@@ -71,14 +71,11 @@ export class ReminderNotificationService {
           lte: endOfJSTToday,
         },
       },
-      include: {
-        gettingUpDeletion: true,
-      },
       orderBy: {
         registeredAt: "desc",
       },
     });
-    if (!todayGettingUp || todayGettingUp.gettingUpDeletion) {
+    if (!todayGettingUp) {
       const lineUserId = account.lineUserId;
       await this.linebotClient.pushMessage(lineUserId, {
         type: "text",
