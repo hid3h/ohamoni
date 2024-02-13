@@ -400,6 +400,7 @@ dist
 .serverless/**/*.zip
 
 mysql8
+.postgres15
 gcloud-docker
 output.css
 files
