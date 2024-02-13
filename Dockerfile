@@ -32,9 +32,10 @@ COPY --from=builder /app/views ./views
 RUN yarn --immutable --production
 
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-RUN yarn prisma:generate
 
 EXPOSE 8080
 ENV PORT 8080
 
 CMD ["yarn", "start:prod"]
+
+docker run -it e9d4527dd2ba /bin/sh 
