@@ -37,5 +37,3 @@ EXPOSE 8080
 ENV PORT 8080
 
 CMD ["yarn", "start:prod"]
-
-docker run -it e9d4527dd2ba /bin/sh 
