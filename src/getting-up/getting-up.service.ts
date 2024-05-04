@@ -241,7 +241,7 @@ export class GettingUpService {
     }
     const openaiMessageContent = result
       ? result.choices[0].message.content
-      : null;
+      : "";
     const text = `直近1週間の起床時間の記録です\n
 ${gettingUpRecordMessages.join("\n")}\n
 ${openaiMessageContent}`;
