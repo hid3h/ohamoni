@@ -238,9 +238,10 @@ export class GettingUpService {
         `error openai.chat.completions.create. lineUserId: ${lineUserId}`,
         e,
       );
-      return;
     }
-    const openaiMessageContent = result.choices[0].message.content;
+    const openaiMessageContent = result
+      ? result.choices[0].message.content
+      : null;
     const text = `直近1週間の起床時間の記録です\n
 ${gettingUpRecordMessages.join("\n")}\n
 ${openaiMessageContent}`;
