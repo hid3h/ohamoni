@@ -1,10 +1,9 @@
-import { Controller, Get, Render } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 
 @Controller()
 export class AppController {
-  @Get()
+  @Get("/health")
   getHello() {
-    console.log("health check");
     return {
       message: "Hello World!",
     };
