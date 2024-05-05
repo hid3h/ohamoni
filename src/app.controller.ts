@@ -3,6 +3,10 @@ import { Controller, Get, Render } from "@nestjs/common";
 @Controller()
 export class AppController {
   @Get()
-  @Render("example")
-  getHello() {}
+  getHello() {
+    console.log("health check");
+    return {
+      message: "Hello World!",
+    };
+  }
 }
